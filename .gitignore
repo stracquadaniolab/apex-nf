@@ -1,0 +1,6 @@
+work/
+results/
+logs/
+.DS_Store
+*.pyc
+.vscode
