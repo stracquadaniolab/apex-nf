@@ -1,6 +1,6 @@
 # enzyme-screening-platform-opentrons
 
-![](https://img.shields.io/badge/current_version-0.0.0-blue)
+![](https://img.shields.io/badge/current_version-0.1.0-blue)
 ![](https://github.com/stracquadaniolab/enzyme-screening-platform-opentrons/workflows/build/badge.svg)
 ## Overview
 End-to-end eznyme screening platform for argB.
