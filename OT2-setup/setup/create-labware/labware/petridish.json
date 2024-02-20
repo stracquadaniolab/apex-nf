@@ -26,18 +26,20 @@
         ]
     ],
     "brand": {
-        "brand": "Petri dish",
-        "brandId": []
+        "brand": "Fisherbrand™ ",
+        "brandId": [
+            "12654785"
+        ]
     },
     "metadata": {
-        "displayName": "Petri Dish 16 Well Plate",
+        "displayName": "Petri Dish 90mm 16 wells",
         "displayCategory": "wellPlate",
         "displayVolumeUnits": "µL",
         "tags": []
     },
     "dimensions": {
-        "xDimension": 128,
-        "yDimension": 86,
+        "xDimension": 127,
+        "yDimension": 85,
         "zDimension": 18
     },
     "wells": {
@@ -47,8 +49,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 41.5,
-            "y": 64.5,
+            "x": 41,
+            "y": 65,
             "z": 7
         },
         "B1": {
@@ -57,8 +59,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 41.5,
-            "y": 49.5,
+            "x": 41,
+            "y": 50,
             "z": 7
         },
         "C1": {
@@ -67,8 +69,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 41.5,
-            "y": 34.5,
+            "x": 41,
+            "y": 35,
             "z": 7
         },
         "D1": {
@@ -77,8 +79,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 41.5,
-            "y": 19.5,
+            "x": 41,
+            "y": 20,
             "z": 7
         },
         "A2": {
@@ -87,8 +89,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 56.5,
-            "y": 64.5,
+            "x": 56,
+            "y": 65,
             "z": 7
         },
         "B2": {
@@ -97,8 +99,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 56.5,
-            "y": 49.5,
+            "x": 56,
+            "y": 50,
             "z": 7
         },
         "C2": {
@@ -107,8 +109,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 56.5,
-            "y": 34.5,
+            "x": 56,
+            "y": 35,
             "z": 7
         },
         "D2": {
@@ -117,8 +119,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 56.5,
-            "y": 19.5,
+            "x": 56,
+            "y": 20,
             "z": 7
         },
         "A3": {
@@ -127,8 +129,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 71.5,
-            "y": 64.5,
+            "x": 71,
+            "y": 65,
             "z": 7
         },
         "B3": {
@@ -137,8 +139,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 71.5,
-            "y": 49.5,
+            "x": 71,
+            "y": 50,
             "z": 7
         },
         "C3": {
@@ -147,8 +149,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 71.5,
-            "y": 34.5,
+            "x": 71,
+            "y": 35,
             "z": 7
         },
         "D3": {
@@ -157,8 +159,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 71.5,
-            "y": 19.5,
+            "x": 71,
+            "y": 20,
             "z": 7
         },
         "A4": {
@@ -167,8 +169,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 86.5,
-            "y": 64.5,
+            "x": 86,
+            "y": 65,
             "z": 7
         },
         "B4": {
@@ -177,8 +179,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 86.5,
-            "y": 49.5,
+            "x": 86,
+            "y": 50,
             "z": 7
         },
         "C4": {
@@ -187,8 +189,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 86.5,
-            "y": 34.5,
+            "x": 86,
+            "y": 35,
             "z": 7
         },
         "D4": {
@@ -197,8 +199,8 @@
             "shape": "rectangular",
             "xDimension": 15,
             "yDimension": 15,
-            "x": 86.5,
-            "y": 19.5,
+            "x": 86,
+            "y": 20,
             "z": 7
         }
     },
@@ -232,7 +234,7 @@
         "quirks": [],
         "isTiprack": false,
         "isMagneticModuleCompatible": false,
-        "loadName": "petridish_16_wellplate"
+        "loadName": "petridish_90mm_16_wells"
     },
     "namespace": "custom_beta",
     "version": 1,
