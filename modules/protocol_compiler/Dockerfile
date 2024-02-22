@@ -1,7 +1,7 @@
 ## base container
 FROM python:3.8 as base_container
 RUN apt-get update \
-    && apt-get install --yes rename procps curl zsh git editorconfig \
+    && apt-get install --yes rename procps curl \
     && apt-get autoremove \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
