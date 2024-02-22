@@ -1,0 +1,51 @@
+{
+	// workspace setup
+	"name": "enzyme screening platform",
+
+	// setup a container to develop an OT2 protocol
+	"dockerFile": "../containers/Dockerfile",
+	"context": ".",
+
+	// Set *default* container specific settings.json values.
+	// vs set code specific options
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"stkb.rewrap",
+				"christian-kohler.path-intellisense",
+				"streetsidesoftware.code-spell-checker",
+				"aaron-bond.better-comments",
+				"gruntfuggly.todo-tree",
+				"mhutchie.git-graph",
+				"donjayamanne.githistory",
+				"github.vscode-github-actions", 
+				"ms-azuretools.vscode-docker", 
+				"ms-python.python",
+                "ms-python.black-formatter",
+				"njpwerner.autodocstring",
+				"nextflow.nextflow", 
+				"timonwong.shellcheck"
+			],
+			"settings": {
+				"editor.tabSize": 4,
+				"terminal.integrated.defaultProfile.linux": "bash",
+				"terminal.integrated.profiles.linux": {
+					"bash": {
+						"path": "/bin/bash",
+						"icon": "terminal-bash"
+					}
+				},
+				"python.formatting.provider": "none",
+                "source.organizeImports": true,
+				"[python]": {
+                    "editor.defaultFormatter": "ms-python.black-formatter",
+                    "editor.formatOnSave": true,
+                    "editor.codeActionsOnSave": [
+                        "source.organizeImports"
+                    ]
+                }
+			}
+		}
+	}
+
+}
