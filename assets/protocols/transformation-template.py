@@ -93,7 +93,7 @@ def get_parameters(json_file: str) -> dict:
     """
     This function parses the json file with the parameters for the experiment and returns them as a dictionary.
     """
-    parameters = json.loads(json_file)  # load and parse the paraemter json file
+    parameters = json.loads(json_file)  # load and parse the parameter json file
     return parameters
 
 
@@ -114,7 +114,7 @@ def run(protocol: protocol_api.ProtocolContext):
     )  # thermocycler module, takes location 7,8,10,11
     transformation_plate = thermocycler_mod.load_labware(
         params["transformation_plate_name"]
-    )  # plate where transformations take place, loaded onto  thermocycler module
+    )  # plate where transformations take place, loaded onto thermocycler module
 
     pipette_1_tipracks = [
         protocol.load_labware(load_name=params["pipette_1_tiprack_name"], location=i)

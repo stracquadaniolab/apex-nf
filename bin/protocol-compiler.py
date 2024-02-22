@@ -2,7 +2,8 @@
 
 """protocol-compiler.py 
 
-    Build a protocol for the Opentrons OT2 using a template file, json params, and CSV file.
+    Build a protocol for the Opentrons OT2 using a template protocol file, 
+    a json parameters file, and CSV file.
 
     Usage:
         protocol-compiler.py [-d --template-dir <template_dir>] [-o --output-file <out_file>] <template_file> <json_file> <csv_file>
@@ -19,7 +20,7 @@ from docopt import docopt
 from jinja2 import Environment, FileSystemLoader
 
 if __name__ == "__main__":
-    # parse commad line arguments
+    # parse command line arguments
     arguments = docopt(__doc__, version="plots")
 
     # loading templates

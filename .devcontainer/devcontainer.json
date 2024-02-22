@@ -3,7 +3,7 @@
 	"name": "enzyme screening platform",
 
 	// setup a container to develop an OT2 protocol
-	"dockerFile": "../containers/Dockerfile",
+	"dockerFile": "Dockerfile",
 	"context": ".",
 
 	// Set *default* container specific settings.json values.

@@ -19,5 +19,5 @@ LABEL org.opencontainers.image.vendor="stracquadaniolab"
 LABEL org.opencontainers.image.authors="Martyna Kasprzyk"
 LABEL org.opencontainers.image.revision="v0.1.0"
 
-COPY containers/requirements.txt requirements.txt 
+COPY requirements.txt requirements.txt 
 RUN pip install --no-cache-dir -r requirements.txt
