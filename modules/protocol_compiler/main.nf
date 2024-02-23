@@ -1,31 +1,47 @@
 process MAKE_TRANSFORMATION_PROTOCOL {
 
-    publishDir "${params.resultsDir}", pattern: "results.txt", mode: 'copy'
+    publishDir "${params.resultsDir}", pattern: "transformation_protocol.py", mode: 'copy'
 
     input:
-        path data
+        tuple path(config), path(csv)
+        path(template_dir)
 
     output:
-        path 'results.txt'
+        path 'transformation_protocol.py'
 
+    script:
     """
-        cat ${data} > results.txt
+        protocol-compiler.py -d ${template_dir} -o transformation_protocol.py \
+            transformation-template.py ${config} ${csv}
+    """
+
+    stub: 
+    """
+        touch transformation_protocol.py
     """
 
 }
 
 process MAKE_SPOTTING_PROTOCOL {
 
-    publishDir "${params.resultsDir}", pattern: "results.txt", mode: 'copy'
+    publishDir "${params.resultsDir}", pattern: "spotting_protocol.py", mode: 'copy'
 
     input:
-        path data
+        tuple path(config), path(csv)
+        path(template_dir)
 
     output:
-        path 'results.txt'
+        path 'spotting_protocol.py'
 
+    script:
     """
-        cat ${data} > results.txt
+        protocol-compiler.py -d ${template_dir} -o spotting_protocol.py \
+            spotting-template.py ${config} ${csv}
+    """
+
+    stub: 
+    """
+        touch spotting_protocol.py
     """
 
 }
