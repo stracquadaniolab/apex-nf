@@ -1,10 +1,9 @@
 {
-	// workspace setup
-	"name": "enzyme screening platform",
-
-	// setup a container to develop an OT2 protocol
+	// setup a container to develop a python package using miniconda3
+	"name": "enzyme-screening-platform-opentrons",
 	"dockerFile": "containers/Dockerfile",
 	"context": ".",
+	"build": {"args": {"CONDA_FILE": "containers/environment.yml"}},
 
 	// Set *default* container specific settings.json values.
 	"settings": {
@@ -12,15 +11,12 @@
 		"terminal.integrated.profiles.linux": {
 			"bash": {
 				"path": "/bin/bash",
-			},
-			"zsh": {
-				"path": "/bin/zsh",
 			}
 		},
 		"terminal.integrated.defaultProfile.windows": "bash",
-		"python.pythonPath": "/usr/local/bin/python",
+		"python.pythonPath": "/opt/conda/bin/python",
 		"python.formatting.provider": "black",
-		"python.formatting.blackPath": "/usr/local/bin/black",
+		"python.formatting.blackPath": "/opt/conda/bin/black",
 		"[python]": {
 			"editor.rulers": [
 				90

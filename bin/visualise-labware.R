@@ -1,50 +1,32 @@
-# visualise-labware.R
-
+#!/usr/bin/env Rscript
 
 # This script generates plots for labware frames with wells based on CSV containing experiment data and corresponding labware JSON files.
 library(ggplot2)
 library(dplyr)
 library(rjson)
-library(ggforce)
 library(tidyverse)
 
+# Create output folder if it doesn't exist
+if (!file.exists("output")) {
+  dir.create("output")
+}
+
 # This function reads and splits CSV data by different labwares determined by deck location
+# Function to read and split CSV data by different labwares determined by deck location
 read_and_split_csv <- function(csv_file_path) {
+  # Read the CSV file
   labwares <- read.csv(csv_file_path)
+  # Split the CSV dataframes based on the deck location
   split_labwares <- split(labwares, labwares$location)
   return(split_labwares)
-
-
-  labware_name = "transformation-parameters"
-  labware_file_path <- file.path("./data", paste0(labware_name, ".json")) # File path for the labware JSON file located in labware folder
-  json_data <- fromJSON(file = labware_file_path)
-
-
-  data <- read.csv(csv_file_path)
-
-  # Create the volume column
-  volume <- paste(data$dna_volume, "ul DNA,", data$cells_volume, "ul cells,", data$soc_volume, "ul SOC")
-
-  # Create a new dataframe with desired columns
-  labwares <- data.frame(
-    well_name = data$transformation_well,
-    dna_volume = data$dna_volume,
-    cells_volume = data$cells_volume,
-    soc_volume = data$soc_volume,
-    volume = volume,
-    reactant = volume,
-    location = "thermocycler",
-    labware = json_data$transformation_plate_name
-  )
-
 }
 
 # Function to check if the labware JSON file exists and if only one labware per deck is specified
-check_labware_exists <- function(labware_name) {
+check_labware_exists <- function(labware_name, opentrons_labware) {
   if (length(labware_name) > 1) {
     stop("There cannot be more than one plate on one deck.")
   }
-  available_labware <- list.files(path = "./setup/create-labware/labware", pattern = ".json", full.names = FALSE)
+  available_labware <- list.files(path = opentrons_labware, pattern = ".json", full.names = FALSE)
   available_labware_names <- tools::file_path_sans_ext(available_labware)
   if (!labware_name %in% available_labware_names) {
     stop("The provided labware name does not match any available labware. If using custom labware, add the JSON file to the labware folder.")
@@ -52,10 +34,10 @@ check_labware_exists <- function(labware_name) {
 }
 
 # This function gets the JSON file from the labware folder with all the dimensions of the specified labwares
-get_labware_json <- function(labware_dataframe) {
+get_labware_json <- function(opentrons_labware, labware_dataframe) {
   labware_name <- unique(labware_dataframe$labware)
-  check_labware_exists(labware_name) # Check if labware exists and if there is only one labware per deck
-  labware_file_path <- file.path("./setup/create-labware/labware", paste0(labware_name, ".json")) # File path for the labware JSON file located in labware folder
+  check_labware_exists(labware_name, opentrons_labware) # Check if labware exists and if there is only one labware per deck
+  labware_file_path <- file.path(opentrons_labware, paste0(labware_name, ".json")) # File path for the labware JSON file located in labware folder
   json_data <- fromJSON(file = labware_file_path)
   return(json_data)
 }
@@ -72,7 +54,7 @@ extract_well_info <- function(well) {
   data.frame(
     well_x_coord = well$x,
     well_y_coord = well$y,
-    shape = well$shape, 
+    shape = well$shape,
     shape_info
   )
 }
@@ -80,7 +62,7 @@ extract_well_info <- function(well) {
 # This function parses a JSON file containing labware information and extracts data for each well
 parse_labware_json <- function(json_data) {
   # Apply the "extract_labware_json" function to get info for each well in the JSON file
-  labware_data <- lapply(json_data$wells, extract_well_info) %>% 
+  labware_data <- lapply(json_data$wells, extract_well_info) %>%
     bind_rows(.id = "well_name") # Combine into one data frame by well_name as the id column
   return(labware_data)
 }
@@ -180,17 +162,17 @@ labware_plot <- function(mapped_wells, json_data, label, fill, title_size, label
     plotted_labware <- plot_circular_wells(labware_frame, mapped_wells, max_y_wells, min_x_wells, label_size)
   }
   # Reorder reactant levels based on their appearance in the plot, so that the legend keys are in the correct order
-  plotted_labware$data$reactant <- factor(plotted_labware$data$reactant, levels = unique(plotted_labware$data$reactant))
+  plotted_labware$data$ID <- factor(plotted_labware$data$ID, levels = unique(plotted_labware$data$ID))
   return(plotted_labware)
 }
 
 # Main function to generate labware plots
-generate_labware_plots <- function(csv_file_path, output_folder, label = "volume", fill = "reactant", title_size, label_size, legend_text_size = 5, legend_key_size, plot_width = 25, plot_height = 20, plot_units = "cm") {
+generate_labware_plots <- function(csv_file_path, opentrons_labware, label = "volume", fill = "ID", title_size, label_size, legend_text_size = 5, legend_key_size, plot_width = 25, plot_height = 20, plot_units = "cm") {
   split_labwares <- read_and_split_csv(csv_file_path) # Create data frames for each unique labware-deck
   
   # For each labware data frame run the following functions:
   for (i in seq_along(split_labwares)) {
-    labware_info <- get_labware_json(split_labwares[[i]])
+    labware_info <- get_labware_json(opentrons_labware,split_labwares[[i]])
     parsed_labware_info <- parse_labware_json(labware_info)
     mapped_wells_data <- map_wells_with_csv(parsed_labware_info, split_labwares[[i]])
     plotted_labware <- labware_plot(mapped_wells_data, labware_info, label, fill, title_size = 20, label_size = 5, legend_text_size = 20, legend_key_size = 10)
@@ -198,9 +180,8 @@ generate_labware_plots <- function(csv_file_path, output_folder, label = "volume
     # Extract unique reactants and create a filename
     deck_location <- unique(mapped_wells_data$location[!is.na(mapped_wells_data$location)])
     filename_suffix <- paste(deck_location, collapse = "-")
-    
-    # Save the plot with the corresponding filename
-    output_file <- file.path(output_folder, paste0("slot", filename_suffix, "-labware.png"))
+  
+    output_file <- paste0("output/slot", filename_suffix, "-labware.png")
     ggsave(output_file, plotted_labware, width = plot_width, height = plot_height, units = plot_units, bg = "white")
   }
 }
@@ -208,7 +189,8 @@ generate_labware_plots <- function(csv_file_path, output_folder, label = "volume
 # Command-line arguments
 args <- commandArgs(trailingOnly = TRUE)
 csv_file_path <- args[1]
-output_folder <- args[2]
+opentrons_labware <- args[2]
+
 
 # Generate labware plots
-generate_labware_plots(csv_file_path, output_folder)
+generate_labware_plots(csv_file_path, opentrons_labware)

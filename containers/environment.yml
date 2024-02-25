@@ -1,0 +1,16 @@
+name: enzyme-screening-platform-opentrons
+channels:
+  - defaults
+  - bioconda
+  - conda-forge
+dependencies:
+  - git
+  - python=3.8
+  - opentrons
+  - pandas
+  - docopt
+  - conda-forge::r-base
+  - conda-forge::r-ggplot2
+  - conda-forge::r-dplyr
+  - conda-forge::r-rjson
+  - conda-forge::r-gridExtra

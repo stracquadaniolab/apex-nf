@@ -1,5 +1,6 @@
-# Load required libraries
-library(jsonlite)
+#!/usr/bin/env Rscript
+
+library(rjson)
 library(gridExtra)
 library(grid)
 library(png)
@@ -18,7 +19,7 @@ insert_overview <- function(data, x_margin, y_initial, y_spacing, font_size) {
   return(overview_y_lines[length(overview_y_lines)]-y_spacing)
 }
 
-insert_preparation<- function(x_margin, y_initial, y_spacing) {
+insert_preparation <- function(x_margin, y_initial, y_spacing) {
   preparation <- c("Reagents preparation",
                    "Prepare the reagents and labware according to the below diagrams.",
                    "Volumes (uL) indicate how much of reagents will be used, so add additional volume.")
@@ -28,9 +29,11 @@ insert_preparation<- function(x_margin, y_initial, y_spacing) {
   return(preparation_y_lines[length(preparation_y_lines)]-y_spacing)
 }
 
-insert_labware <- function(folder_path, width, height, x_margin, y_initial, y_spacing) {
-  image_files <- list.files(folder_path, pattern = "^slot", full.names = TRUE)
+
+insert_labware <- function(visualised_labware, width, height, x_margin, y_initial, y_spacing) {
+  image_files <- list.files(visualised_labware, pattern = "^slot", full.names = TRUE)
   num_images <- length(image_files)
+
   positions <- list()
   # Generate positions
   for (i in 1:num_images) {
@@ -40,6 +43,7 @@ insert_labware <- function(folder_path, width, height, x_margin, y_initial, y_sp
     positions[[i]] <- list(x = x, y = y)
   }
   
+  print(positions)
   # Insert each image into the PDF
   for (i in seq_along(image_files)) {
     if (file.exists(image_files[i])) {
@@ -51,6 +55,8 @@ insert_labware <- function(folder_path, width, height, x_margin, y_initial, y_sp
   
   return(positions[[num_images]]$y - height/2 - y_spacing)
 }
+
+
 
 insert_deck_loading <- function(data, x_margin, y_initial, font_size, y_spacing) {
   deck <- c("Deck Loading Instructions",
@@ -67,17 +73,16 @@ insert_deck_loading <- function(data, x_margin, y_initial, font_size, y_spacing)
   grid.text(deck, x = x_margin, y = deck_y_lines, just = "left", gp = text_style)
 }
 
-instructions <- function(json_file_path = "./data/transformation-parameters.json", output_file = "./results/Instructions.pdf", x_margin = 0.05, y_spacing = 0.02, labware_width = 0.45, labware_height = 0.27, font_size = 12, y_initial = 0.98) {
-
+instructions <- function(json_file_path = "data/transformation-parameters.json", visualised_labware, output_file = "Instructions.pdf", x_margin = 0.05, y_spacing = 0.02, labware_width = 0.45, labware_height = 0.27, font_size = 12, y_initial = 0.98) {
   pdf(output_file, width = 8.5, height = 11)
   par(mar = c(5, 4, 4, 2) + 0.1)
-  json_data <- fromJSON(json_file_path)
+  json_data <- fromJSON(file = json_file_path)
 
   overview <- insert_overview(json_data, x_margin, y_initial, y_spacing, font_size) # Title and Overview
   preparation <- insert_preparation(x_margin, overview, y_spacing)   # Reagents preparation
 
 
-  labware <- insert_labware("./results", labware_width, labware_height, x_margin, preparation, y_spacing)   # # Insert images and get coordinates
+  labware <- insert_labware(visualised_labware, labware_width, labware_height, x_margin, preparation, y_spacing)   # # Insert images and get coordinates
   deck_loading <- insert_deck_loading(json_data, x_margin, labware, font_size, y_spacing)
 
   dev.off()
@@ -87,7 +92,8 @@ instructions <- function(json_file_path = "./data/transformation-parameters.json
 # Command-line arguments
 args <- commandArgs(trailingOnly = TRUE)
 json_file_path <- args[1]
-output_file <- args[2]
+visualised_labware <- args[2]
+output_file <- args[3]
 
 # Generateinstructions
-instructions(json_file_path, output_file)
+instructions(json_file_path, visualised_labware, output_file)
