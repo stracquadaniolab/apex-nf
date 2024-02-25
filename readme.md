@@ -1,6 +1,6 @@
 # protein-expression-opentrons-nf
 
-![](https://img.shields.io/badge/current_version-0.0.0-blue)
+![](https://img.shields.io/badge/current_version-0.1.0-blue)
 ![](https://github.com/stracquadaniolab/protein-expression-opentrons-nf/workflows/build/badge.svg)
 ## Overview
 opentrons protocol
