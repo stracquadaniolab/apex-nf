@@ -9,8 +9,9 @@ dependencies:
   - opentrons
   - pandas
   - docopt
-  - conda-forge::r-base
-  - conda-forge::r-ggplot2
-  - conda-forge::r-dplyr
-  - conda-forge::r-rjson
-  - conda-forge::r-gridExtra
+  - r-base
+  - r-ggplot2
+  - r-dplyr
+  - r-rjson
+  - r-gridExtra
+  - r-png
