@@ -5,13 +5,12 @@ channels:
   - conda-forge
 dependencies:
   - git
-  - python=3.8
+  - python=3.8.9
   - opentrons
   - pandas
   - docopt
   - r-base
-  - r-ggplot2
-  - r-dplyr
+  - r-tidyverse
   - r-rjson
   - r-gridExtra
   - r-png

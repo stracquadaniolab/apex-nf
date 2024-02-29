@@ -22,7 +22,7 @@ LABEL org.opencontainers.image.documentation="https://github.com/stracquadaniola
 LABEL org.opencontainers.image.source="https://github.com/stracquadaniolab/enzyme-screening-platform-opentrons"
 LABEL org.opencontainers.image.vendor="stracquadaniolab"
 LABEL org.opencontainers.image.authors="Martyna Kasprzyk"
-LABEL org.opencontainers.image.revision="v0.1.2"
+LABEL org.opencontainers.image.revision="v0.1.3"
 
 COPY --chown=micromamba:micromamba ${CONDA_FILE} /tmp
 RUN micromamba install -y -n base -f /tmp/`basename ${CONDA_FILE}` && \

@@ -7,8 +7,8 @@ import math
 
 metadata = {
     "apiLevel": "2.13",
-    "protocolName": "Agar plate spotting",
-    "description": "OT-2 rotocol for agar plate spotting.",
+    "protocolName": "Colony picking",
+    "description": "OT-2 protocol for colony picking from agar plates.",
     "author": "Martyna Kasprzyk"
 }
 
@@ -21,26 +21,24 @@ def load_experiment_parameters(json_file: str) -> dict:
 
 def load_experiment_data(csv_file: str):
     """
-    This function parses the csv file with the data for the experiment and returns them as namedtuples.
+    Parse CSV file and return data for single and multi-channel pipettes.
     """
     csv_data = csv.DictReader(csv_file.splitlines())
 
-    single_channel_wells = [] # List of wells when single channel pipette is used
-    multi_channel_wells = [] # List of wells when multi channel pipette is used
-    columns = defaultdict(str)
+    single_channel_wells, multi_channel_wells = [],[] # List of wells when single or multi channel pipette is used
+    columns = defaultdict(list)
 
     for row in csv_data:
         single_channel_wells.append(row) # For single channel the list of wells stays as provided in the csv file
-        well = row["source_well"]
-        row_letter, column_number = well[0], well[1:] # Well annotation is in the form "A1"
-        if not columns[column_number]:
-            multi_channel_wells.append(row) # For multi channel the list is modified so only the first well of a column is kept
-            columns[column_number] = row_letter
+        well = row["destination_well"]
+        _, column_number = well[0], well[1:] # For multi
+        if column_number not in columns:
+            multi_channel_wells.append(row)
+            columns[column_number].append(well)
     
     protocol_data = namedtuple("protocol_data", ["ID", "location", "source_well", "destination_well", "spotting_volume", "agar_plate_weight"])
     single_channel_data = extract_data(single_channel_wells)
     multi_channel_data = extract_data(multi_channel_wells)
-
     return protocol_data(*single_channel_data), protocol_data(*multi_channel_data)
 
 def extract_data(rows: List[Dict]) -> Tuple[List[str], ...]:
@@ -94,31 +92,19 @@ def run(protocol: protocol_api.ProtocolContext):
     pipette_tipracks = [protocol.load_labware(load_name=json_params["pipette_tiprack_name"], location=i) for i in json_params["pipette_tiprack_slots"]]
     pipette = protocol.load_instrument(instrument_name=json_params["pipette_name"], mount=json_params["pipette_mount"], tip_racks=pipette_tipracks)
     pipette_channel = multi if choose_pipette_channel(str(pipette)) == "multi" else single # Choose the csv wells based on the pipette being used
-
+    
     # Load hardware and labware
     agar_plates = [protocol.load_labware(load_name=json_params["agar_plate_name"],
                                          location=slot,
-                                         label=f"Agar Plate {str(i+1)}")
+                                         label=f"Agar Plate {str(i+1)}") 
                                          for i, slot in enumerate(pipette_channel.location)]
-    
-    if json_params["transformation_plate_slot"] == "thermocycler":
-        thermocycler_mod = protocol.load_module("thermocycler") # Thermocycler module, takes location 7,8,10,11
-        transformation_plate = thermocycler_mod.load_labware(json_params["transformation_plate_name"])
-        thermocycler_mod.open_lid()
-    else:
-        transformation_plate = protocol.load_labware(load_name=json_params["transformation_plate_name"], location=json_params["transformation_plate_slot"])
+    media_plate = protocol.load_labware(load_name=json_params["media_plate_name"], location=json_params["media_plate_slot"])
 
-    thermocycler_mod = protocol.load_module("thermocycler") # Thermocycler module, takes location 7,8,10,11
-    transformation_plate = thermocycler_mod.load_labware(json_params["transformation_plate_name"]) # Transformation done using a thermocycler
-    
-    ######## SPOTTING ##########
-    thermocycler_mod.open_lid()
-    for plate, source, destination, volume, weight in zip(agar_plates, pipette_channel.source_wells, pipette_channel.destination_wells, pipette_channel.spotting_volume, pipette_channel.agar_plate_weight):
-        pipette.well_bottom_clearance.dispense = 1 # Reset the dispense height 
+    ######## COLONY PICKING ##########
+    for plate, source, destination, weight in zip(agar_plates, pipette_channel.source_wells, pipette_channel.destination_wells, pipette_channel.agar_plate_weight):
         pipette.pick_up_tip()
-        pipette.mix(repetitions=3, volume=pipette.max_volume, location=transformation_plate[source], rate=2) # Resuspend the transformed cells
-        pipette.aspirate(volume=volume + json_params["dead_volume"], location=transformation_plate[source], rate=2) # Aspirate the spotting volume and dead volume for better accuracy
-        pipette.well_bottom_clearance.dispense = agar_height(weight, json_params["plate_weight_without_agar"], json_params["agar_plate_shape"], json_params["agar_plate_dimensions"], json_params["agar_density"], json_params["spotting_height"]) #Adjust height to the agar wight
-        pipette.dispense(volume=volume, location=plate[destination], rate=4) # Spotting
-        protocol.delay(seconds=5) # Weight in case there is a problem with a droplet forming
+        picking_height = agar_height(weight, json_params["plate_weight_without_agar"], json_params["agar_plate_shape"], json_params["agar_plate_dimensions"], json_params["agar_density"], json_params["spotting_height"]) - json_params["agar_stab_depth"] # Adjust height to the agar weight
+        pipette.move_to(plate[source].bottom(z=picking_height))
+        pipette.move_to(media_plate[destination].bottom())
+        pipette.mix(repetitions=3, rate=4) # Inoculation
         pipette.drop_tip()
