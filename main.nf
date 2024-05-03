@@ -77,6 +77,6 @@ workflow {
 
     CreateProtocol(csv_file_channel, json_file_channel, protocol_template_channel)
     // SimulateProtocol(CreateProtocol.out.protocol)
-    VisualiseLabware(CreateProtocol.out.labware, labware_folder_channel)
-    CreateInstructions(instructions_template_channel, json_file_channel, VisualiseLabware.out.visual)
+    // VisualiseLabware(CreateProtocol.out.labware, labware_folder_channel)
+    // CreateInstructions(instructions_template_channel, json_file_channel, VisualiseLabware.out.visual)
 }

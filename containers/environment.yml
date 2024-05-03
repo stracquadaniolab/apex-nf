@@ -9,8 +9,8 @@ dependencies:
   - opentrons
   - pandas
   - docopt
-  - r-base
-  - r-tidyverse
-  - r-rjson
-  - r-gridExtra
-  - r-png
+  #- r-base
+  #- r-tidyverse
+  #- r-rjson
+  #- r-gridExtra
+  #- r-png
