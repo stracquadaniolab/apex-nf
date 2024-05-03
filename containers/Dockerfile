@@ -14,6 +14,7 @@ CMD ["/bin/bash"]
 ## main container
 ARG CONDA_FILE=containers/environment.yml
 FROM base_container
+
 # adding opencontainer labels to link registry to github repository
 LABEL org.opencontainers.image.title="enzyme-screening-platform-opentrons"
 LABEL org.opencontainers.image.description="End-to-end eznyme screening platform for argB."
