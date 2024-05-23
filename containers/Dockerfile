@@ -14,6 +14,7 @@ CMD ["/bin/bash"]
 ## main container
 ARG CONDA_FILE=containers/environment.yml
 FROM base_container
+
 # adding opencontainer labels to link registry to github repository
 LABEL org.opencontainers.image.title="enzyme-screening-platform-opentrons"
 LABEL org.opencontainers.image.description="End-to-end eznyme screening platform for argB."
@@ -22,7 +23,7 @@ LABEL org.opencontainers.image.documentation="https://github.com/stracquadaniola
 LABEL org.opencontainers.image.source="https://github.com/stracquadaniolab/enzyme-screening-platform-opentrons"
 LABEL org.opencontainers.image.vendor="stracquadaniolab"
 LABEL org.opencontainers.image.authors="Martyna Kasprzyk"
-LABEL org.opencontainers.image.revision="v0.1.3"
+LABEL org.opencontainers.image.revision="v0.1.5"
 
 COPY --chown=micromamba:micromamba ${CONDA_FILE} /tmp
 RUN micromamba install -y -n base -f /tmp/`basename ${CONDA_FILE}` && \

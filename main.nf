@@ -7,6 +7,7 @@ include { CREATE_LABWARE_CSV as CREATE_LABWARE_CSV_3; VISUALISE_LABWARE as VISUA
 
 workflow {
 
+<<<<<<< HEAD
     // PROTOCOL 1 - TRANSFORMATION
     MAKE_PROTOCOL_1(
         tuple(file("$params.protocol_1_config"), file("$params.protocol_1_data")), 
@@ -67,4 +68,10 @@ workflow {
         VISUALISE_LABWARE_3.out
     )
 
+=======
+    CreateProtocol(csv_file_channel, json_file_channel, protocol_template_channel)
+    // SimulateProtocol(CreateProtocol.out.protocol)
+    // VisualiseLabware(CreateProtocol.out.labware, labware_folder_channel)
+    // CreateInstructions(instructions_template_channel, json_file_channel, VisualiseLabware.out.visual)
+>>>>>>> refs/remotes/origin/main
 }
