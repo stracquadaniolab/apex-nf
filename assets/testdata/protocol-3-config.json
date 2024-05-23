@@ -1,0 +1,20 @@
+{
+        "right_pipette_name":"p20_single_gen2",
+        "right_pipette_tiprack_name":"opentrons_96_tiprack_20ul",
+        "right_pipette_tiprack_slot": [5],
+        "left_pipette_name":"p300_multi_gen2",
+        "left_pipette_tiprack_name":"opentrons_96_tiprack_300ul",
+        "left_pipette_tiprack_slot":[6],
+        "media_plate_name": "usascientific_96_wellplate_2.4ml_deep",
+        "media_plate_slot":2,
+        "culture_plate_name":"usascientific_96_wellplate_2.4ml_deep",
+        "culture_plate_slot":3,
+        "agar_plate_name":"armadillo_96_wellplate_200ul_pcr_full_skirt",
+        "agar_plate_slot": [1],
+        "agar_plate_area":9469.2,
+        "empty_agar_plate_weight":38.92,
+        "agar_density":0.0008975,
+        "agar_stab_depth":0,
+        "sampling_method": "spiral",
+        "spot_radius": 2.5
+}

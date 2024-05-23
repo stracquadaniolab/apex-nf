@@ -1,0 +1,7 @@
+id,agar_plate_location,source_well,destination_well,spotting_volume,agar_plate_weight
+pJKR-BL21(DE3),2,A1,A1,5,76.65
+pJKR-BL21(DE3),2,A1,A2,5,76.65
+pJKR-BL21(DE3),2,A1,A3,5,76.65
+pJKR-BL21(DE3),2,A1,A4,5,76.65
+pUC19-BL21(DE3),2,A2,A5,5,76.65
+no-DNA-BL21(DE3),2,A3,A6,5,76.65

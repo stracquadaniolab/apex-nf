@@ -64,7 +64,7 @@ combine_well_and_experiment_data <- function(well_data, experiment_data) {
 }
 
 # This function creates a labware frame to which later the wells are added.
-plot_labware_frame <- function(merged_data, json_data, label, fill, title_size, legend_text_size, legend_key_size) {
+plot_labware_frame <- function(merged_data, json_data, label, fill, title_size, legend_text_size, legend_key_size, legend_row_number) {
   # Create a base plot for the plate frame with wells
   ggplot(merged_data, aes(well_x_coord, well_y_coord, fill = as.factor(!!rlang::sym(fill)), label = !!rlang::sym(label))) +
     geom_rect(
@@ -76,11 +76,10 @@ plot_labware_frame <- function(merged_data, json_data, label, fill, title_size, 
     theme(
       legend.position = "bottom",
       legend.justification = "center",
-      legend.box = "horizontal",
       legend.text = element_text(size = legend_text_size),
       legend.title = element_blank(),
       plot.title = element_text(size = title_size, hjust = 0.5)) +
-    guides(fill = guide_legend(override.aes = list(size = legend_key_size)))
+    guides(fill = guide_legend(nrow = legend_row_number, override.aes = list(size = legend_key_size)))
 }
 
 # This function adds rectangular wells to the existing labware frame
@@ -134,8 +133,8 @@ plot_circular_wells <- function(labware_frame, mapped_wells, max_y_wells, min_x_
 }
 
 # This function creates the final labware plot, combining both the labware frame and wells
-labware_plot <- function(mapped_wells, json_data, label, fill, title_size, label_size, legend_text_size, legend_key_size) {
-  labware_frame <- plot_labware_frame(mapped_wells, json_data, label, fill, title_size, legend_text_size, legend_key_size) # Create the base plot for the plate frame with wells
+labware_plot <- function(mapped_wells, json_data, label, fill, title_size, label_size, legend_text_size, legend_key_size, legend_row_number) {
+  labware_frame <- plot_labware_frame(mapped_wells, json_data, label, fill, title_size, legend_text_size, legend_key_size, legend_row_number) # Create the base plot for the plate frame with wells
   max_y_wells <- mapped_wells[mapped_wells$well_y_coord == max(mapped_wells$well_y_coord), ] %>% arrange(well_x_coord) # Extract wells with maximum y coordinates and arrange them by x coordinates (that is the first row to annotate with numbers)
   min_x_wells <- mapped_wells[mapped_wells$well_x_coord == min(mapped_wells$well_x_coord), ] %>% arrange(desc(well_y_coord)) # Extract wells with minimum x coordinates and arrange them by y coordinates (that is the first column t annotate with letters)
   
@@ -150,14 +149,12 @@ labware_plot <- function(mapped_wells, json_data, label, fill, title_size, label
     plotted_labware <- plot_circular_wells(labware_frame, mapped_wells, max_y_wells, min_x_wells, label_size)
   }
   # Reorder reactant levels based on their appearance in the plot, so that the legend keys are in the correct order
-  plotted_labware$data$ID <- factor(plotted_labware$data$ID, levels = unique(plotted_labware$data$ID))
+  plotted_labware$data$id <- factor(plotted_labware$data$id, levels = unique(plotted_labware$data$id))
   return(plotted_labware)
 }
 
-
 counter_env <- new.env()
 counter_env$counter <- 0
-
 # Main function to generate labware plots
 generate_labware_plots <- function(csv_file_path, opentrons_labware_directory, plot_params = list()) {
   split_csv_by_location(csv_file_path) %>%
@@ -170,7 +167,7 @@ generate_labware_plots <- function(csv_file_path, opentrons_labware_directory, p
         labware_details <- get_labware_details(opentrons_labware_directory, .x)
         well_data <- process_labware_json_for_plotting(labware_details)
         combined_data <- combine_well_and_experiment_data(well_data, .x)
-        plotted_labware <- labware_plot(combined_data, labware_details, plot_params$label, plot_params$fill, plot_params$title_size, plot_params$label_size, plot_params$legend_text_size, plot_params$legend_key_size)
+        plotted_labware <- labware_plot(combined_data, labware_details, plot_params$label, plot_params$fill, plot_params$title_size, plot_params$label_size, plot_params$legend_text_size, plot_params$legend_key_size, plot_params$legend_row_number)
         
         deck_location <- unique(combined_data$location[!is.na(combined_data$location)]) # Extract the location and create a filename
         filename_suffix <- paste(deck_location, collapse = "-")
@@ -185,7 +182,7 @@ csv_path <- args[1]
 opentrons_labware_directory <- args[2]
 
 # Default plotting parameters, could be extended to parse additional CLI arguments
-plot_params <- list(label = "volume", fill = "ID", title_size = 20, label_size = 4, legend_text_size = 16, legend_key_size = 10, plot_width = 25, plot_height = 20, plot_units = "cm")
+plot_params <- list(label = "volume", fill = "id", title_size = 20, label_size = 4, legend_text_size = 16, legend_key_size = 10, legend_row_number = 3, plot_width = 25, plot_height = 20, plot_units = "cm")
 
 # Initiate plot generation
 generate_labware_plots(csv_path, opentrons_labware_directory, plot_params)

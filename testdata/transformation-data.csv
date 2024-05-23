@@ -1,9 +1,0 @@
-dna_ID,dna_well,dna_volume,cells_ID,cells_well,cells_volume,media_ID,media_well,media_volume,transformation_well
-water,A1,3,BL21(DE3),A2,30,SOC,A3,150,A1
-pUC19,B1,3,BL21(DE3),B2,30,SOC,B3,150,B1
-pJKR,C1,3,BL21(DE3),C2,30,SOC,C3,150,C1
-pJKR,D1,3,BL21(DE3),D2,30,SOC,D3,150,D1
-pJKR,E1,3,BL21(DE3),E2,30,SOC,E3,150,E1
-pJKR,F1,3,BL21(DE3),F2,30,SOC,F3,150,F1
-pJKR,G1,3,BL21(DE3),G2,30,SOC,G3,150,G1
-pJKR,H1,3,BL21(DE3),H2,30,SOC,H3,150,H1
