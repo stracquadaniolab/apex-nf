@@ -1,0 +1,53 @@
+---
+title: "Instructions"
+output: pdf_document
+params:
+  json_path: NULL
+  labware_images_dir: NULL
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(rjson)
+library(knitr)
+json_data <- fromJSON(file = params$json_path)
+```
+\vspace{-1.5cm}
+## Protocol 3: Protein expression induction in OT-2
+
+### Overview
+The overnight cultures are diluted and grown until the cells reach the desired growth phase.
+The robot transfers cells to appropriate plates.
+The robot adds an inducer to the cultures.
+After induction, cultures are incubated to allow for protein expression.
+  
+### Preparation
+Prepare the reagents and labware according to the below diagrams. 
+Volumes (uL) indicate how much of reagents will be used, so add additional volume.
+
+```{r import-labware-images, results='asis', echo=FALSE}
+# Read all image files from the directory
+image_files <- list.files(path = params$labware_images_dir, pattern = "\\.png$", full.names = TRUE)
+# Sort files numerically and alphabetically
+image_files <- sort(image_files)
+
+# Print images in Markdown format, 2 per row
+for (i in seq_along(image_files)) {
+  # Start a new line for every pair of images
+  if (i %% 2 == 1 && i > 1) {
+    cat('\\newline\n')
+  }
+  
+  cat(sprintf('![](%s){width=49%%}', image_files[i]))
+
+  if (i %% 2 != 0 && i < length(image_files)) {
+    cat(' ')
+  }
+}
+```
+
+### Deck Loading
+Check that `r json_data$right_pipette_name` is in the right mount and `r json_data$left_pipette_name` is in the left mount.
+**Slot `r json_data$right_pipette_tiprack_slot`** load `r json_data$right_pipette_tiprack_name` for the `r json_data$right_pipette_name` pipette.
+**Slot `r json_data$left_pipette_tiprack_slot`** load `r json_data$left_pipette_tiprack_name` for the `r json_data$left_pipette_name` pipette.
+

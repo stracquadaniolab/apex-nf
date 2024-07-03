@@ -212,9 +212,9 @@ def run(protocol: protocol_api.ProtocolContext):
     if json_params["destination_plate_slot"] ==  "thermocycler":
 
         thermocycler_mod.close_lid()
-        thermocycler_mod.set_lid_temperature(temperature=json_params["inc_temp"])
-        thermocycler_mod.set_block_temperature(temperature=json_params["inc_temp"], 
-                                            hold_time_minutes=json_params["inc_time"])
+        thermocycler_mod.set_lid_temperature(temperature=json_params["recovery_temp"])
+        thermocycler_mod.set_block_temperature(temperature=json_params["recovery_temp"], 
+                                            hold_time_minutes=json_params["recovery_time"])
         thermocycler_mod.deactivate_lid()
         thermocycler_mod.deactivate()
         protocol.set_rail_lights(False)

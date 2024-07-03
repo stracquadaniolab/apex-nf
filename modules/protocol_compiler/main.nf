@@ -70,6 +70,29 @@ process MAKE_PROTOCOL_3 {
 
 }
 
+process MAKE_PROTOCOL_4 {
+
+    publishDir "${params.resultsDir}", pattern: "protocol-4.py", mode: 'copy'
+
+    input:
+        tuple path(config), path(csv)
+        path(template_dir)
+
+    output:
+        path 'protocol-4.py'
+
+    script:
+    """
+        protocol-compiler.py -d ${template_dir} -o protocol-4.py \
+            protocol-4-template.py ${config} ${csv}
+    """
+
+    stub: 
+    """
+        touch protocol-4.py
+    """
+}
+
 process SIMULATE_PROTOCOL {
 
     publishDir "${params.resultsDir}", mode: 'copy'
@@ -89,5 +112,4 @@ process SIMULATE_PROTOCOL {
     """
         touch protocol_simulation.txt
     """
-
 }

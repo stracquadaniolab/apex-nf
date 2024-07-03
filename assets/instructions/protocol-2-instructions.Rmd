@@ -1,0 +1,54 @@
+---
+title: "Instructions"
+output: pdf_document
+params:
+  json_path: NULL
+  labware_images_dir: NULL
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(rjson)
+library(knitr)
+json_data <- fromJSON(file = params$json_path)
+```
+\vspace{-1.5cm}
+## Protocol 2: Agar Plate Spotting in OT-2
+
+### Overview
+Transformed cells are spotted on the total of x `r json_data$agar_plate_slots` agar plates.
+The pipette aspirates additional `r json_data$additional_volume` uL of transformed cells.
+The spotting height above the agar is set at `r json_data$spotting_height` mm.
+The agar height is calculated automatically per plate based on:
+the plate weight without agar (`r json_data$empty_agar_plate_weight`) and with agar (g), 
+and agar density of `r json_data$agar_density`(g/mm3).
+
+### Preparation
+The plates are spotted in uL according to the layout below.
+
+```{r import-labware-images, results='asis', echo=FALSE}
+# Read all image files from the directory
+image_files <- list.files(path = params$labware_images_dir, pattern = "\\.png$", full.names = TRUE)
+# Sort files numerically and alphabetically
+image_files <- sort(image_files)
+
+# Print images in Markdown format, 2 per row
+for (i in seq_along(image_files)) {
+  # Start a new line for every pair of images
+  if (i %% 2 == 1 && i > 1) {
+    cat('\\newline\n')
+  }
+  
+  cat(sprintf('![](%s){width=49%%}', image_files[i]))
+
+  if (i %% 2 != 0 && i < length(image_files)) {
+    cat(' ')
+  }
+}
+```
+
+### Deck Loading
+Check that `r json_data$pipette_name` is in the `r json_data$pipette_mount` mount.
+**Slot `r json_data$tiprack_slots`** load `r json_data$tiprack_name` for the `r json_data$pipette_name` pipette.
+**Slot `r json_data$agar_plate_slots`** load `r json_data$agar_plate_name` containing agar.
+**Slot `r json_data$source_plate_slot`** load `r json_data$source_plate_name` containing transformed cells.

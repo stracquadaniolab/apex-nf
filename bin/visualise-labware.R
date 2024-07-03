@@ -1,8 +1,10 @@
 #!/usr/bin/env Rscript
 
 # This script generates plots for labware frames with wells based on CSV containing experiment data and corresponding labware JSON files.
-library(tidyverse)
 library(rjson)
+library(ggplot2)
+library(dplyr)
+library(purrr)
 
 # Ensure output directory exists
 if (!file.exists("plots")) {

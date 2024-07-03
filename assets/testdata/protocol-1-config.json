@@ -19,6 +19,6 @@
     "heat_shock_time":30,
     "post_shock_incubation_temp":4,
     "post_shock_incubation_time":2,
-    "inc_temp":37,
-    "inc_time":60
+    "recovery_temp":37,
+    "recovery_time":60
 }
