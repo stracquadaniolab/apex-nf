@@ -1,6 +1,6 @@
 # apex-nf
 
-![](https://img.shields.io/badge/current_version-0.1.5-blue)
+![](https://img.shields.io/badge/current_version-0.1.6-blue)
 ![](https://github.com/stracquadaniolab/apex-nf/workflows/build/badge.svg)
 
 # User Manual for Running the Nextflow Workflow for E. coli Experiments
