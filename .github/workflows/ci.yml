@@ -20,7 +20,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: containers/Dockerfile
+          file: .devcontainer/Dockerfile
           platforms: linux/amd64
           load: true
           push: false
@@ -30,13 +30,13 @@ jobs:
       - name: 'Testing Nextflow pipeline with test profile'
         run: |
           chmod +x bin/*
-          nextflow run . -profile test,ci,docker      
+          nextflow run . -profile test,ci,docker     
       - name: Push image to GitHub container registry
         if: startsWith(github.event.ref, 'refs/tags')
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: containers/Dockerfile
+          file: .devcontainer/Dockerfile
           platforms: linux/amd64
           push: true
           tags: ghcr.io/${{ github.repository }}:0.1.5, ghcr.io/${{ github.repository }}:latest

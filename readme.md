@@ -1,7 +1,12 @@
+# apex-nf
+
+![](https://img.shields.io/badge/current_version-0.1.5-blue)
+![](https://github.com/stracquadaniolab/apex-nf/workflows/build/badge.svg)
+
 # User Manual for Running the Nextflow Workflow for E. coli Experiments
 
 ## Overview
-This manual provides instructions for using the Opentrons Protein Screening Pipeline, which is written in Nextflow and shared on GitHub. The pipeline consists of a seres of automated E. coli laboratory protocols including: heat-shock transformations (Protocol 1), agar plate spotting (Protocol 2), colony sampling (Protoocl 3), and protein expression induction (Protocol4).
+This manual provides instructions for using the Opentrons Protein Screening Pipeline, which is written in Nextflow and shared on GitHub. The pipeline consists of a seres of automated E. coli laboratory protocols including: heat-shock transformations (Protocol 1), agar plate spotting (Protocol 2), colony sampling (Protocol 3), and protein expression induction (Protocol4).
 
 1. **Navigate to the repository:**
 
