@@ -20,7 +20,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: .devcontainer/Dockerfile
+          file: containers/Dockerfile
           platforms: linux/amd64
           load: true
           push: false
@@ -36,7 +36,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: .devcontainer/Dockerfile
+          file: containers/Dockerfile
           platforms: linux/amd64
           push: true
           tags: ghcr.io/${{ github.repository }}:0.1.6, ghcr.io/${{ github.repository }}:latest
