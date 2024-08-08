@@ -26,7 +26,7 @@ jobs:
           push: false
           tags: ghcr.io/${{ github.repository }}:0.2.0, ghcr.io/${{ github.repository }}:latest
       - name: 'Install Nextflow'
-        uses: stracquadaniolab/gh-action-setup-nextflow@v0.1.5
+        uses: stracquadaniolab/gh-action-setup-nextflow@v23.04.02
       - name: 'Testing Nextflow pipeline with test profile'
         run: |
           chmod +x bin/*
