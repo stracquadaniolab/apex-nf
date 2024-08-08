@@ -24,9 +24,9 @@ jobs:
           platforms: linux/amd64
           load: true
           push: false
-          tags: ghcr.io/${{ github.repository }}:0.2.0, ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ github.repository }}:0.1.5, ghcr.io/${{ github.repository }}:latest
       - name: 'Install Nextflow'
-        uses: stracquadaniolab/gh-action-setup-nextflow@v0.2.0
+        uses: stracquadaniolab/gh-action-setup-nextflow@v0.1.5
       - name: 'Testing Nextflow pipeline with test profile'
         run: |
           chmod +x bin/*
@@ -39,4 +39,4 @@ jobs:
           file: containers/Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/${{ github.repository }}:0.2.0, ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ github.repository }}:0.1.5, ghcr.io/${{ github.repository }}:latest
