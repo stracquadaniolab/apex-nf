@@ -50,4 +50,3 @@ for (i in seq_along(image_files)) {
 Check that `r json_data$right_pipette_name` is in the right mount and `r json_data$left_pipette_name` is in the left mount.
 **Slot `r json_data$right_pipette_tiprack_slot`** load `r json_data$right_pipette_tiprack_name` for the `r json_data$right_pipette_name` pipette.
 **Slot `r json_data$left_pipette_tiprack_slot`** load `r json_data$left_pipette_tiprack_name` for the `r json_data$left_pipette_name` pipette.
-

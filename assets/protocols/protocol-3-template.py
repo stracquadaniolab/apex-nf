@@ -7,7 +7,7 @@ import math
 import numpy as np
 
 metadata = {
-    "apiLevel": "2.13",
+    "apiLevel": "2.15",
     "protocolName": "Protocol 3 - Colony Sampling",
     "description": "OT-2 protocol for colony sampling from agar plates.",
     "author": "Martyna Kasprzyk"
@@ -29,157 +29,133 @@ INPUT_CSV_FILE = """
 
 ##############################################
 
+def load_json_data(json_content: str) -> dict:
+    """Load JSON formatted string with experiment parameters."""
+    return json.loads(json_content)
 
-def load_experiment_parameters(json_file: str) -> dict:
-    """
-    Load and return experiment parameters from a JSON file.
-    """
-    experiment_parameters = json.loads(json_file)
-    return experiment_parameters
+def load_csv_data(csv_content: str):
+    """Parse CSV content with experiment data."""
+    csv_reader = csv.DictReader(csv_content.splitlines()[1:])
+    data = {key: [] for key in csv_reader.fieldnames if key}
+    for row in csv_reader:
+        for key, value in row.items():
+            data[key].append(float(value) if 'volume' in key else value)
+    return namedtuple('ProtocolData', data.keys())(*[data[key] for key in data.keys()])
 
-def load_experiment_data(csv_file: str):
-    """
-    Parse CSV file and return data for single and multi-channel pipettes.
-    """
-    csv_data = csv.DictReader(csv_file.splitlines()[1:])
+def setup_pipettes(protocol: protocol_api.ProtocolContext, pipette_info: Dict[str, Any]) -> Dict[str, protocol_api.InstrumentContext]:
+    """Load specified pipettes into the protocol based on configuration details provided."""
+    loaded_pipettes = {}
+    for side in ["right", "left"]:
+        if pipette_info[f"{side}_pipette_name"] != "NA":
+            tip_racks = [protocol.load_labware(pipette_info[f"{side}_pipette_tiprack_name"], slot) for slot in pipette_info[f"{side}_pipette_tiprack_slot"]]
+            pipette = protocol.load_instrument(pipette_info[f"{side}_pipette_name"], mount=side, tip_racks=tip_racks)
+            loaded_pipettes[pipette_info[f"{side}_pipette_name"]] = pipette
+    return loaded_pipettes
 
-    single_channel_wells, multi_channel_wells = [],[] # List of wells when single or multi channel pipette is used
-    columns = defaultdict(list)
-    for row in csv_data:
-        single_channel_wells.append(row) # For single channel the list of wells stays as provided in the csv file
-        well = row["destination_well"]
-        _, column_number = well[0], well[1:] # For multi
-        if column_number not in columns:
-            multi_channel_wells.append(row)
-            columns[column_number].append(well)
-    
-    protocol_data = namedtuple("protocol_data", ["id","agar_plate_location","agar_plate_weight","media_source_well","sampling_source_well","media_volume","destination_well"])
-    single_channel_data = extract_data(single_channel_wells)
-    multi_channel_data = extract_data(multi_channel_wells)
-    return protocol_data(*single_channel_data), protocol_data(*multi_channel_data)
-
-def extract_data(rows: List[Dict]) -> Tuple[List[str], ...]:
-    """
-    Extarct the required info for the protocol.
-    """
-    data = defaultdict(list)
-    for row in rows:
-        for key in row:
-            if key.endswith("volume"):
-                data[key].append(float(row[key]))
-            else:
-                data[key].append(row[key])
-    return tuple(data.values())
-
-def choose_pipette_volume(volumes: List[float]) -> str:
-    """
-    Select appropriate pipette based on the volumes.
-    """
-    volumes = [volume for volume in volumes if volume != 0]
-    min_volume = min(volumes)
-    if min_volume <= 20:
-        return "p20"
-    elif min_volume > 20:
-        return "p300"
+def select_pipette(loaded_pipettes: Dict[str, protocol_api.InstrumentContext], volume: List[float] = None, is_sampling: bool = False) -> protocol_api.InstrumentContext:
+    """Determine the appropriate pipette based on volume requirements and whether it's for sampling."""
+    if is_sampling:
+        return min(loaded_pipettes.values(), key=lambda p: p.max_volume)
     else:
-        return None
-    
-def choose_pipette_channel(pipette: str) -> str:
-    """
-    Determine pipette channel based on pipette type.
-    """
-    if "8-Channel" in pipette:
-        return "multi"
-    elif "Single-Channel" in pipette:
-        return "single"
-    else:
-        return "Invalid pipette type."
+        pipette_type = "p20" if min(volume, default=float('inf')) <= 20 else "p300"
+        for pipette_name, pipette in loaded_pipettes.items():
+            if pipette_type in pipette_name:
+                return pipette
+    return None
 
-def agar_height(agar_plate_weight: float, empty_agar_plate_weight: float , agar_plate_area: float, agar_density: float) -> float:
-    """
-    Calculate the the agar height based on the base area of the plate, weight of the empty plate, the weight of plate with agar and the agar density.
-    """
+def filter_data(pipette, sources: List[str], volumes: List[float], destinations: List[str], locations: List[any] = None) -> Tuple[List[str], List[float], List[str], List[float]]:
+    """Filters sources, volumes, and destinations, optionally handling locations."""
+    seen_columns, filtered_sources, filtered_volumes, filtered_destinations, filtered_locations = set(), [], [], [], []
+    is_multi_channel = "8-Channel" in str(pipette)
+
+    for i, (source, destination) in enumerate(zip(sources, destinations)):
+        formatted_destination = 'A' + destination[1:] if is_multi_channel else destination
+        formatted_source = 'A' + source[1:] if is_multi_channel else source
+
+        if formatted_destination not in seen_columns:
+            seen_columns.add(formatted_destination)
+            filtered_sources.append(formatted_source)
+            filtered_destinations.append(formatted_destination)
+            
+            if volumes:
+                filtered_volumes.append(volumes[i])
+            if locations:
+                filtered_locations.append(int(locations[i]))
+    if locations:
+        return filtered_sources, filtered_destinations, filtered_locations
+    else:
+        return filtered_sources, filtered_volumes, filtered_destinations
+    
+def agar_height(agar_plate_weight: float, empty_agar_plate_weight: float, agar_plate_area: float, agar_density: float, agar_pierce_depth: float) -> float:
+    """Calculate the the agar height based on the base area of the plate, weight of the empty plate, the weight of plate with agar and the agar density."""
     agar_weight = float(agar_plate_weight) - float(empty_agar_plate_weight)
-    agar_height = agar_weight/(agar_plate_area*agar_density) # Agar height calculation
-    height = agar_height # Adds spotting_height i.e. how many mm below or above the agar the robot should dispense
+    agar_height = agar_weight/(agar_plate_area*(agar_density/1000))
+    height = agar_height + agar_pierce_depth
     return height
 
 def calculate_spiral_coords(max_radius: float, num_points: int = 25, total_rotations: float = 3) -> tuple:  
     """
     Calculate the coordinates for a spiral sampling method.
-    
     max_radius (float): The maximum radial distance from the center to the outermost point of the spiral.
     num_points (int): Number of points in the spiral. Defines the granularity of the spiral curve.
     total_rotations (float): Total number of complete 360-degree rotations the spiral will make.
-
     """
-    b = max_radius / (total_rotations * 2 * np.pi) # Calculate the increment factor b based on the max radius and total rotations
-    end_theta = total_rotations * 2 * np.pi # Maximum theta based on total rotations
-    theta = np.linspace(0, end_theta, num_points) # Create theta values from 0 to end_theta evenly spaced based on num_points
-    r = b * theta # Calculate the radius for each theta
-    # Calculate x and y coordinates using the radius and theta values
+    b = max_radius / (total_rotations * 2 * np.pi) 
+    end_theta = total_rotations * 2 * np.pi
+    theta = np.linspace(0, end_theta, num_points)
+    r = b * theta
     x = r * np.cos(theta)
     y = r * np.sin(theta)
 
     return x, y
 
 def run(protocol: protocol_api.ProtocolContext):
-    """
-    Main function for running the protocol.
-    """
-    json_params = load_experiment_parameters(INPUT_JSON_FILE) # load the parameters from the json file
-    single, multi = load_experiment_data(INPUT_CSV_FILE) # load data from the csv file, modified based on the channel of the pipette
+    """Main function for running the protocol."""
+    json_params = load_json_data(INPUT_JSON_FILE)
+    csv_data = load_csv_data(INPUT_CSV_FILE)
 
-    # Load pipettes
-    right_pipette_tipracks = [protocol.load_labware(load_name=json_params["right_pipette_tiprack_name"], location=i) for i in json_params["right_pipette_tiprack_slot"]]
-    right_pipette = protocol.load_instrument(instrument_name=json_params["right_pipette_name"], mount="right", tip_racks=right_pipette_tipracks)
-
-    left_pipette_tipracks = [protocol.load_labware(load_name=json_params["left_pipette_tiprack_name"], location=i) for i in json_params["left_pipette_tiprack_slot"]]
-    left_pipette = protocol.load_instrument(instrument_name=json_params["left_pipette_name"], mount="left", tip_racks=left_pipette_tipracks)
-
-    pipette_media = right_pipette if choose_pipette_volume(single.media_volume) in json_params["right_pipette_name"] else left_pipette # Choose which pipette to use based on volume
-    pipette_channel_media = multi if choose_pipette_channel(str(pipette_media)) == 'multi' else single
-    pipette_sampling = right_pipette if choose_pipette_volume([10.0]) in json_params["right_pipette_name"] else left_pipette # Choose which pipette to use based on volume
-    pipette_channel_sampling = multi if choose_pipette_channel(str(pipette_sampling)) == 'multi' else single
-
-     # Load hardware and labware
-    agar_labware = [protocol.load_labware(load_name=json_params["agar_plate_name"],
-                                        location=slot,
-                                        label=f"Agar Plate {i+1}")
-                    for i, slot in enumerate(json_params["agar_plate_slot"])]
-
-    mapping_dict = {int(slot): labware for slot, labware in zip(json_params["agar_plate_slot"], agar_labware)} # Create a mapping dictionary from slot to agar_labware
-    agar_plates = [mapping_dict[int(loc)] for loc in pipette_channel_sampling.agar_plate_location if int(loc) in mapping_dict] # Generate agar_plates list with repeating plates
+    loaded_pipettes = setup_pipettes(protocol, json_params)
+    pipette_media = select_pipette(loaded_pipettes, csv_data.media_volume)
+    pipette_sampling = select_pipette(loaded_pipettes, is_sampling=True) 
 
     media_plate = protocol.load_labware(load_name = json_params["media_plate_name"], location = json_params["media_plate_slot"])
-    culture_plate = protocol.load_labware(load_name = json_params["culture_plate_name"], location = json_params["culture_plate_slot"])
+    culture_plate = protocol.load_labware(load_name = json_params["destination_plate_name"], location = json_params["destination_plate_slot"])
     
-    pipette_media.transfer(volume=pipette_channel_media.media_volume,
-                            source=[media_plate.wells_by_name()[well] for well in pipette_channel_media.media_source_well],
-                            dest=[culture_plate.wells_by_name()[well] for well in pipette_channel_media.destination_well],
+    sampling_source_wells, sampling_destination_wells, locations = filter_data(pipette_sampling, csv_data.sampling_source_well, [], csv_data.destination_well, csv_data.agar_plate_location)
+    media_source_wells, media_volumes, media_destination_wells = filter_data(pipette_media, csv_data.media_source_well, csv_data.media_volume, csv_data.destination_well)
+    agar_labware = {int(slot): protocol.load_labware(load_name=json_params["agar_plate_name"], location=slot, label=f"Agar Plate {i+1}")
+                    for i, slot in enumerate(json_params["agar_plate_slot"])}
+    agar_info = {slot: {'empty_plate_weight': weight, 'agar_plate_weight': agar_weight}
+                 for slot, weight, agar_weight in zip(json_params["agar_plate_slot"], json_params["empty_agar_plate_weight"], json_params["agar_plate_weight"])}
+    agar_plates = [agar_labware[loc] for loc in locations]
+    empty_plate_weight = [agar_info[loc]['empty_plate_weight'] for loc in locations if loc in agar_info]
+    agar_plate_weight = [agar_info[loc]['agar_plate_weight'] for loc in locations if loc in agar_info]
+    
+    protocol.set_rail_lights(True)
+
+    ########## DISTRIBUTE MEDIA ##########
+    pipette_media.transfer(volume=media_volumes,
+                            source=[media_plate.wells_by_name()[well] for well in media_source_wells],
+                            dest=[culture_plate.wells_by_name()[well] for well in media_destination_wells],
                             new_tip="once")
 
-    if json_params["sampling_method"] == "spiral":
-        x_coords, y_coords = calculate_spiral_coords(json_params["spot_radius"])
-        for plate, weight, well, culture_well in zip(agar_plates, pipette_channel_sampling.agar_plate_weight, pipette_channel_sampling.sampling_source_well, pipette_channel_sampling.destination_well):
-            pipette_sampling.pick_up_tip()
-            sampling_height = agar_height(weight, json_params["empty_agar_plate_weight"], json_params["agar_plate_area"], json_params["agar_density"])
-            colony_well = plate.wells_by_name()[well]
-            for x,y in zip(x_coords, y_coords):
-                colony_sampling = colony_well.bottom(z=sampling_height-json_params["agar_stab_depth"]).move(types.Point(x=x, y=y))
-                pipette_sampling.move_to(colony_sampling)
-            pipette_sampling.move_to(media_plate[culture_well].bottom())
-            pipette_sampling.mix(repetitions=3, rate=4) # Inoculation
-            pipette_sampling.drop_tip()
+    ########## SAMPLING ##########
+    for plate, source, destination, empty_weight, agar_weight in zip(agar_plates, sampling_source_wells, sampling_destination_wells, empty_plate_weight, agar_plate_weight):
+        pipette_sampling.pick_up_tip()
+        sampling_height = agar_height(agar_weight, empty_weight, json_params["agar_plate_area"], json_params["agar_density"], json_params["agar_pierce_depth"])
+        colony_well = plate.wells_by_name()[source]
 
-    elif json_params["sampling_method"] == "pierce":
-        for plate, weight, well, culture_well in zip(agar_plates, pipette_channel_sampling.agar_plate_weight, pipette_channel_sampling.source_well, pipette_channel_sampling.destination_well):
-            pipette_sampling.pick_up_tip()
-            sampling_height = agar_height(weight, json_params["empty_agar_plate_weight"], json_params["agar_plate_area"], json_params["agar_density"])
-            print(sampling_height)
-            colony_well = plate.wells_by_name()[well]
-            colony_sampling = colony_well.bottom(z=sampling_height-json_params["agar_stab_depth"])
+        if json_params["sampling_method"] == "spiral":
+            x_coords, y_coords = calculate_spiral_coords(json_params["spot_radius"])
+            for x, y in zip(x_coords, y_coords):
+                colony_sampling = colony_well.bottom(z=sampling_height).move(types.Point(x=x, y=y))
+                pipette_sampling.move_to(colony_sampling)
+        elif json_params["sampling_method"] == "pierce":
+            colony_sampling = colony_well.bottom(z=sampling_height)
             pipette_sampling.move_to(colony_sampling)
-            pipette_sampling.move_to(media_plate[culture_well].bottom())
-            pipette_sampling.mix(repetitions=3, rate=4) # Inoculation
-            pipette_sampling.drop_tip()
+
+        pipette_sampling.move_to(media_plate[destination].bottom())
+        pipette_sampling.mix(repetitions=2, rate=4)
+        pipette_sampling.drop_tip()
+
+    protocol.set_rail_lights(False)

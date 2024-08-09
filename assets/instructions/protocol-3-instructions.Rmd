@@ -17,11 +17,11 @@ json_data <- fromJSON(file = params$json_path)
 
 ### Overview
 The colonies are sampled using a pipette tip and transferred to destination plate containing fresh media supplemented with appropriate antibiotic.
-The robot samples colonies from total of x agar plates.
-The picking height into the agar is set at x mm.
+The robot samples colonies from total of `r length(json_data$agar_plate_slot) ` agar plates.
+The picking height into the agar is set at `r json_data$agar_pierce_depth` mm.
 The agar height is calculated automatically per plate based on:
-the plate weight without agar (`r json_data$empty_agar_plate_weight`) and with agar (g), 
-and agar density of `r json_data$agar_density`(g/mm3).
+the plate weight without agar and with agar (g), 
+and agar density of `r json_data$agar_density`($g mm^{-3}$).
 
 ### Preparation
 The colonies are sampled according to the plate layout below.
@@ -48,6 +48,9 @@ for (i in seq_along(image_files)) {
 ```
 
 ### Deck Loading
-Check that `r json_data$pipette_name` is in the `r json_data$pipette_mount` mount.
-**Slot `r json_data$tiprack_slots`** load `r json_data$tiprack_name` for the `r json_data$pipette_name` pipette.
-**Slot `r json_data$agar_plate_slots`** load `r json_data$agar_plate_name` containing agar.
+Check that `r json_data$right_pipette_name` is in the right mount and `r json_data$left_pipette_name` is in the left mount.
+**Slot `r json_data$right_pipette_tiprack_slot`** load `r json_data$right_pipette_tiprack_name` for the `r json_data$right_pipette_name` pipette.
+**Slot `r json_data$left_pipette_tiprack_slot`** load `r json_data$left_pipette_tiprack_name` for the `r json_data$left_pipette_name` pipette.
+**Slot `r json_data$media_plate_slot`** load `r json_data$media_plate_name` containing fresh media with antibiotic.
+**Slot `r json_data$agar_plate_slot`** load `r json_data$agar_plate_name` containing agar with developed colonies.
+**Slot `r json_data$destination_plate_slot`** load `r json_data$destination_plate_name` where fresh media will be distributed and sampled cells propagated.

@@ -6,10 +6,11 @@
     "source_plate_name":"armadillo_96_wellplate_200ul_pcr_full_skirt",
     "source_plate_slot":"1",
     "agar_plate_name":"armadillo_96_wellplate_200ul_pcr_full_skirt",
-    "agar_plate_slots":[2],
+    "agar_plate_slot":[2],
     "agar_plate_area":9469.2,
-    "empty_agar_plate_weight":38.92,
-    "agar_density":0.0008975,
-    "additional_volume":5,
+    "empty_agar_plate_weight":[38.92],
+    "agar_plate_weight":[68.35],
+    "agar_density":0.911,
+    "additional_volume":1,
     "spotting_height":0
 }

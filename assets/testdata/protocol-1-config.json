@@ -12,7 +12,7 @@
     "media_plate_name": "armadillo_96_wellplate_200ul_pcr_full_skirt",
     "media_plate_slot": 1,
     "destination_plate_name":"armadillo_96_wellplate_200ul_pcr_full_skirt",
-    "destination_plate_slot": 4,
+    "destination_plate_slot": "thermocycler",
     "pre_shock_incubation_temp":4,
     "pre_shock_incubation_time":30,
     "heat_shock_temp":42,

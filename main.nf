@@ -11,9 +11,9 @@ workflow PROTOCOL_1 {
         tuple(file("$params.protocol_1_config"), file("$params.protocol_1_data")), 
         file("$params.protocol_template_dir")
     )
-    // SIMULATE_PROTOCOL_1(
-    //     MAKE_PROTOCOL_1.out
-    // )
+    SIMULATE_PROTOCOL_1(
+        MAKE_PROTOCOL_1.out
+    )
     CREATE_LABWARE_CSV_1(
         tuple(file("$params.protocol_1_data"), file("$params.protocol_1_config"))
     )
@@ -30,14 +30,14 @@ workflow PROTOCOL_1 {
 
 workflow PROTOCOL_2 {
 
-    // PROTOCOL 2 - SPOTTING
+    // PROTOCOL 2 - SELECTION
     MAKE_PROTOCOL_2(
         tuple(file("$params.protocol_2_config"), file("$params.protocol_2_data")), 
         file("$params.protocol_template_dir")
     )
-    // SIMULATE_PROTOCOL_2(
-    //     MAKE_PROTOCOL_2.out
-    // )
+    SIMULATE_PROTOCOL_2(
+        MAKE_PROTOCOL_2.out
+    )
     CREATE_LABWARE_CSV_2(
         tuple(file("$params.protocol_2_data"), file("$params.protocol_2_config"))
     )
@@ -61,9 +61,9 @@ workflow PROTOCOL_3 {
         tuple(file("$params.protocol_3_config"), file("$params.protocol_3_data")), 
         file("$params.protocol_template_dir")
     )
-    // SIMULATE_PROTOCOL_3(
-    //     MAKE_PROTOCOL_3.out
-    // )
+    SIMULATE_PROTOCOL_3(
+        MAKE_PROTOCOL_3.out
+    )
     CREATE_LABWARE_CSV_3(
         tuple(file("$params.protocol_3_data"), file("$params.protocol_3_config"))
     )
@@ -87,9 +87,9 @@ workflow PROTOCOL_4 {
         tuple(file("$params.protocol_4_config"), file("$params.protocol_4_data")), 
         file("$params.protocol_template_dir")
     )
-    // SIMULATE_PROTOCOL_4(
-    //     MAKE_PROTOCOL_4.out
-    // )
+    SIMULATE_PROTOCOL_4(
+        MAKE_PROTOCOL_4.out
+    )
     CREATE_LABWARE_CSV_4(
         tuple(file("$params.protocol_4_data"), file("$params.protocol_4_config"))
     )
@@ -110,5 +110,5 @@ workflow {
     PROTOCOL_1()
     PROTOCOL_2()
     PROTOCOL_3()
-    // PROTOCOL_4()
+    PROTOCOL_4()
 }

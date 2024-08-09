@@ -13,15 +13,15 @@ library(knitr)
 json_data <- fromJSON(file = params$json_path)
 ```
 \vspace{-1.5cm}
-## Protocol 2: Agar Plate Spotting in OT-2
+## Protocol 2: Colony selection
 
 ### Overview
-Transformed cells are spotted on the total of x `r json_data$agar_plate_slots` agar plates.
-The pipette aspirates additional `r json_data$additional_volume` uL of transformed cells.
+Transformed cells are spotted on the total of `r length(json_data$agar_plate_slot) ` agar plates.
+The pipette aspirates additional `r json_data$additional_volume` $\mu$L of transformed cells.
 The spotting height above the agar is set at `r json_data$spotting_height` mm.
 The agar height is calculated automatically per plate based on:
-the plate weight without agar (`r json_data$empty_agar_plate_weight`) and with agar (g), 
-and agar density of `r json_data$agar_density`(g/mm3).
+the plate weight without agar and with agar (g), 
+and agar density of `r json_data$agar_density`($g mm^{-3}$).
 
 ### Preparation
 The plates are spotted in uL according to the layout below.
@@ -50,5 +50,5 @@ for (i in seq_along(image_files)) {
 ### Deck Loading
 Check that `r json_data$pipette_name` is in the `r json_data$pipette_mount` mount.
 **Slot `r json_data$tiprack_slots`** load `r json_data$tiprack_name` for the `r json_data$pipette_name` pipette.
-**Slot `r json_data$agar_plate_slots`** load `r json_data$agar_plate_name` containing agar.
+**Slot `r json_data$agar_plate_slot`** load `r json_data$agar_plate_name` containing agar.
 **Slot `r json_data$source_plate_slot`** load `r json_data$source_plate_name` containing transformed cells.

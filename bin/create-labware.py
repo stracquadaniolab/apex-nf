@@ -121,35 +121,40 @@ def create_csv_protocol_4(data_csv, parameters_json, output_csv):
         plate_slots = json.load(f)
 
     df_all_reactants = []
-    for reactant in ["blank", "culture", "inducer"]:
+    for reactant in ["media", "culture", "inducer"]:
 
         well_col = f"{reactant}_well"
         volume_col = f"{reactant}_volume"
-        id_col = f"ID"
+        id_col = f"{reactant}_id"
 
         df_id_well_volume = df.groupby(well_col).agg({volume_col: "sum", id_col: "first"}).reset_index() # sum the volumes of reactants
-        df_id_well_volume.rename(columns={id_col: "ID", well_col: "well_name", volume_col: "volume"}, inplace=True)
+        df_id_well_volume.rename(columns={id_col: "id", well_col: "well_name", volume_col: "volume"}, inplace=True)
         df_id_well_volume["location"] = plate_slots[f"{reactant}_plate_slot"]
         df_id_well_volume["labware"] = plate_slots[f"{reactant}_plate_name"]
 
-        df_all_reactants.append(df_id_well_volume) 
+        df_all_reactants.append(df_id_well_volume)
+
+    # df['combined_id'] = df.apply(map_ids, axis=1)
+    # print(df['combined_id'])
 
     # Map these IDs to rows where both culture_volume and inducer_volume > 0
-    def map_ids(row):
-        if row["culture_volume"] > 0 and row["inducer_volume"] > 0:
-            # Find the matching "ID" from the "culture_only_ids" series
-            culture_id = df.loc[(df["culture_well"] == row["culture_well"]) & (df["inducer_volume"] == 0), "ID"]
-            if not culture_id.empty:
-                return row["ID"] + "+" + culture_id.iloc[0]
-        return row["ID"]
+    # def map_ids(row):
+    #     if row["culture_volume"] > 0 and row["inducer_volume"] > 0:
+    #         # Find the matching "ID" from the "culture_only_ids" series
+    #         culture_id = df.loc[(df["culture_well"] == row["culture_well"]) & (df["inducer_volume"] == 0), "id"]
+    #         print(culture_id)
+    #         if not culture_id.empty:
+    #             return row["id"] + "+" + culture_id.iloc[0]
+    #     return row["id"]
 
-    df["combined_ID"] = df.apply(map_ids, axis=1)
+    # df["combined_id"] = df.apply(map_ids, axis=1)
+    # print(df["combined_id"])
 
-    # induction dataframe
+    # # induction dataframe
     df_induction = pd.DataFrame({
-        "ID": df["combined_ID"],
+        "id": df["culture_id"],
         "well_name": df["destination_well"],
-        "volume": df[["blank_volume", "culture_volume", "inducer_volume"]].sum(axis=1),
+        "volume": df[["media_volume", "culture_volume", "inducer_volume"]].sum(axis=1),
         "labware": plate_slots["destination_plate_name"],
         "location": plate_slots["destination_plate_slot"]
     })
@@ -157,8 +162,9 @@ def create_csv_protocol_4(data_csv, parameters_json, output_csv):
     df_all_reactants.append(df_induction) 
 
     result_df = pd.concat(df_all_reactants, ignore_index=True) # Concatenate the grouped dataframes vertically
-    result_df = result_df.reindex(columns=["ID", "location", "labware", "well_name", "volume"]) # Reorder columns
+    result_df = result_df.reindex(columns=["id", "location", "labware", "well_name", "volume"]) # Reorder columns
     result_df.to_csv(output_csv, index=False) # write to a CSV file
+
 
 def main():
     args = docopt(__doc__)
@@ -174,7 +180,7 @@ def main():
     elif "3" in csv_data:
         create_csv_protocol_3(csv_data, json_data, csv_output)
     
-    elif "4" in csv_data:
+    if "4" in csv_data:
         create_csv_protocol_4(csv_data, json_data, csv_output)
 
 if __name__ == "__main__":

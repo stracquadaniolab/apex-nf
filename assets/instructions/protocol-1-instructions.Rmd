@@ -13,7 +13,7 @@ library(knitr)
 json_data <- fromJSON(file = params$json_path)
 ```
 \vspace{-1.5cm}
-## Protocol 1: Heat-Shock Transformation in OT-2
+## Protocol 1: Heat shock transformations
 
 ### Overview
 DNA is transferred to competent cells.

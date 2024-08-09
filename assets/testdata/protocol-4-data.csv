@@ -1,3 +1,3 @@
-source_id,source_well,source_volume,destination_id,destination_well,destination_volume
-pJKR-BL21(DE3),A1,10,fresh-LB,A6,500
-pJKR-BL21(DE3),B1,10,fresh-LB,B6,500
+culture_id,culture_well,culture_volume,media_id,media_well,media_volume,inducer_id,inducer_well,inducer_volume,destination_well
+pJKR-BL21(DE3),A1,10,fresh-LB,A1,500,IPTG-0.1M,A1,2,A1
+pJKR-BL21(DE3),A2,10,fresh-LB,A2,500,IPTG-0.1M,A2,2,A2
