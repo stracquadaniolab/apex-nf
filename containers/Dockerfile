@@ -27,6 +27,6 @@ LABEL org.opencontainers.image.documentation="https://github.com/stracquadaniola
 LABEL org.opencontainers.image.source="https://github.com/stracquadaniolab/apex-nf"
 LABEL org.opencontainers.image.vendor="stracquadaniolab"
 LABEL org.opencontainers.image.authors="Martyna Kasprzyk"
-LABEL org.opencontainers.image.revision="v0.2.2"
+LABEL org.opencontainers.image.revision="v0.3.0"
 COPY containers/requirements.txt requirements.txt 
 RUN pip install --no-cache-dir -r requirements.txt
