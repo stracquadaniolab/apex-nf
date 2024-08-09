@@ -3,3 +3,4 @@ opentrons
 jinja2
 docopt
 pandas
+typing-extensions>=4.8.0 

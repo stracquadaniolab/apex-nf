@@ -1,5 +1,5 @@
 ## base container
-FROM python:3.9 as base_container
+FROM python:3.10 as base_container
 
 # Install R
 RUN apt-get update && \
