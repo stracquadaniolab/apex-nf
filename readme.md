@@ -1,6 +1,6 @@
 # apex-nf: Automated Protein EXpression in E. coli
 
-![](https://img.shields.io/badge/current_version-0.3.1-blue)
+![](https://img.shields.io/badge/current_version-0.3.2-blue)
 ![](https://github.com/stracquadaniolab/apex-nf/workflows/build/badge.svg)
 
 ## Overview
