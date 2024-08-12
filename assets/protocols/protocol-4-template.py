@@ -28,264 +28,113 @@ INPUT_CSV_FILE = """
 ##############################################
 
 
-def load_experiment_parameters(json_file: str) -> dict:
-    """
-    Load and return experiment parameters from a JSON file.
-    """
-    experiment_parameters = json.loads(json_file)
-    return experiment_parameters
+def load_json_data(json_content: str) -> dict:
+    """Load JSON formatted string with experiment parameters."""
+    return json.loads(json_content)
 
-
-def load_experiment_data(csv_file: str):
-    """
-    Parse CSV file and return data for single and multi-channel pipettes.
-    """
-    csv_data = csv.DictReader(csv_file.splitlines()[1:])
-
-    single_channel_wells, multi_channel_wells = (
-        [],
-        [],
-    )  # List of wells when single or multi channel pipette is used
-    columns = defaultdict(list)
-    for row in csv_data:
-        single_channel_wells.append(
-            row
-        )  # For single channel the list of wells stays as provided in the csv file
-        well = row["destination_well"]
-        _, column_number = well[0], well[1:]  # For multi
-        if column_number not in columns:
-            multi_channel_wells.append(row)
-            columns[column_number].append(well)
-
-    protocol_data = namedtuple(
-        "protocol_data",
-        [
-            "source_id",
-            "agar_plate_location",
-            "agar_plate_weight",
-            "media_source_well",
-            "sampling_source_well",
-            "media_volume",
-            "destination_well",
-        ],
-    )
-    single_channel_data = extract_data(single_channel_wells)
-    multi_channel_data = extract_data(multi_channel_wells)
-    return protocol_data(*single_channel_data), protocol_data(*multi_channel_data)
-
-
-def extract_data(rows: List[Dict]) -> Tuple[List[str], ...]:
-    """
-    Extract the required info for the protocol.
-    """
-    data = defaultdict(list)
-    for row in rows:
-        for key in row:
-            if key.endswith("volume"):
-                data[key].append(float(row[key]))
-            else:
-                data[key].append(row[key])
-    return tuple(data.values())
-
-
-def choose_pipette_volume(volumes: List[float]) -> str:
-    """
-    Select appropriate pipette based on the volumes.
-    """
-    volumes = [volume for volume in volumes if volume != 0]
-    min_volume = min(volumes)
-    if min_volume <= 20:
-        return "p20"
-    elif min_volume > 20:
-        return "p300"
-    else:
-        return "Volumes out of range for available pipettes"
-
-
-def choose_pipette_channel(pipette: str) -> str:
-    """
-    Determine pipette channel based on pipette type.
-    """
-    if "8-Channel" in pipette:
-        return "multi"
-    elif "Single-Channel" in pipette:
-        return "single"
-    else:
-        return "Invalid pipette type."
-
-
-def load_or_reuse_labware(
-    protocol: protocol_api.ProtocolContext,
-    plate_info: Dict[str, str],
-    loaded_plates: Dict[str, protocol_api.Labware],
-):
-    """
-    Load a plate into the protocol or reuse an existing one if the slot is already occupied.
-    """
+def load_csv_data(csv_content: str):
+    """Parse CSV content with experiment data."""
+    csv_reader = csv.DictReader(csv_content.splitlines()[1:])
+    data = {key: [] for key in csv_reader.fieldnames if key}
+    for row in csv_reader:
+        for key, value in row.items():
+            data[key].append(float(value) if 'volume' in key else value)
+    return namedtuple('ProtocolData', data.keys())(*[data[key] for key in data.keys()])
+    
+def load_or_reuse_labware(protocol: protocol_api.ProtocolContext, plate_info: Dict[str, str], loaded_plates: Dict[str, protocol_api.Labware]):
+    """Load a plate into the protocol or reuse an existing one if the slot is already occupied."""    
     slot = plate_info["slot"]
-    if slot in loaded_plates:
-        return loaded_plates[
-            slot
-        ]  # Reuse the plate that"s already loaded into this slot
-    else:
-        plate = protocol.load_labware(plate_info["name"], slot)
-        loaded_plates[slot] = plate  # Load a new plate and store it in the dictionary
-        return plate
+    return loaded_plates[slot] if slot in loaded_plates else loaded_plates.setdefault(slot, protocol.load_labware(plate_info["name"], slot))
 
-
-def filter_and_transfer(
-    sources: List[str], destinations: List[str], volumes: List[float]
-) -> Tuple[List[str], List[str], List[float]]:
+def filter_data(pipette, sources: List[str], volumes: List[float], destinations: List[str]) -> Tuple[List[str], List[float], List[str]]:
     """
-    Filter out "NA" values and return filtered sources, destinations, and volumes.
+    Filters out sources, volumes, and destinations. Adjusts wells to start with 'A' for 8-channel pipettes, unless source is "NA".
+    Leaves data unmodified for single-channel pipettes except for filtering duplicate destinations.
     """
-    filtered_indices = [i for i, source in enumerate(sources) if source != "NA"]
-    return (
-        [sources[i] for i in filtered_indices],
-        [destinations[i] for i in filtered_indices],
-        [volumes[i] for i in filtered_indices],
-    )
+    seen_columns, filtered_sources, filtered_volumes, filtered_destinations = set(), [], [], []
+    is_multi_channel = "8-Channel" in str(pipette)
+    
+    for source, volume, destination in zip(sources, volumes, destinations):
+        if source == "NA":
+            # formatted_source = source
+            pass
+        else:
+            formatted_source = 'A' + source[1:] if is_multi_channel else source
 
+        destination_column = destination[1:]
+        formatted_destination = 'A' + destination_column if is_multi_channel else destination
+
+        if formatted_destination in seen_columns:
+            continue 
+
+        seen_columns.add(formatted_destination)
+        filtered_sources.append(formatted_source)
+        filtered_volumes.append(volume)
+        filtered_destinations.append(formatted_destination)
+    
+    return filtered_sources, filtered_volumes, filtered_destinations
+
+def setup_pipettes(protocol: protocol_api.ProtocolContext, pipette_info: Dict[str, Any]) -> Dict[str, protocol_api.InstrumentContext]:
+    """Load specified pipettes into the protocol based on configuration details provided."""
+    loaded_pipettes = {}
+    for side in ["right", "left"]:
+        if pipette_info[f"{side}_pipette_name"] != "NA":
+            tip_racks = [protocol.load_labware(pipette_info[f"{side}_pipette_tiprack_name"], slot) for slot in pipette_info[f"{side}_pipette_tiprack_slot"]]
+            pipette = protocol.load_instrument(pipette_info[f"{side}_pipette_name"], mount=side, tip_racks=tip_racks)
+            loaded_pipettes[pipette_info[f"{side}_pipette_name"]] = pipette
+    return loaded_pipettes
+
+def select_pipette(volume: List[float], loaded_pipettes: Dict[str, protocol_api.InstrumentContext]) -> protocol_api.InstrumentContext:
+    """ Determine the appropriate pipette based on the volume and available pipettes. """
+    if len(loaded_pipettes) == 1:
+        return next(iter(loaded_pipettes.values()))
+    pipette_type = "p20" if min(volume, default=float('inf')) <= 20 else "p300"
+    for pipette_name, pipette in loaded_pipettes.items():
+        if pipette_type in pipette_name:
+            return pipette
+    return None
 
 def run(protocol: protocol_api.ProtocolContext):
-    """
-    Main function for running the protocol.
-    """
+    """Main function for running the protocol."""
+    json_params = load_json_data(INPUT_JSON_FILE)
+    csv_data = load_csv_data(INPUT_CSV_FILE)
+    
+    loaded_pipettes = setup_pipettes(protocol, json_params)
+    pipette_media = select_pipette(csv_data.media_volume, loaded_pipettes)
+    pipette_culture = select_pipette(csv_data.culture_volume, loaded_pipettes)
+    pipette_inducer = select_pipette(csv_data.inducer_volume, loaded_pipettes)
+    
+    loaded_plates = {}
+    media_plate = load_or_reuse_labware(protocol, {"name": json_params["media_plate_name"], "slot": json_params["media_plate_slot"]}, loaded_plates)
+    culture_plate = load_or_reuse_labware(protocol, {"name": json_params["culture_plate_name"], "slot": json_params["culture_plate_slot"]}, loaded_plates)
+    inducer_plate = load_or_reuse_labware(protocol, {"name": json_params["inducer_plate_name"], "slot": json_params["inducer_plate_slot"]}, loaded_plates)
+    destination_plate = load_or_reuse_labware(protocol, {"name": json_params["destination_plate_name"], "slot": json_params["destination_plate_slot"]}, loaded_plates)
 
-    json_params = load_experiment_parameters(
-        INPUT_JSON_FILE
-    )  # load the parameters from the json file
-    single, multi = load_experiment_data(
-        INPUT_CSV_FILE
-    )  # load data from the csv file, modified based on the channel of the pipette
+    protocol.set_rail_lights(True)
+    ########## DISTRIBUTE MEDIA ##########
+    media_wells, media_volumes, media_destination_wells = filter_data(pipette_media, csv_data.media_well, csv_data.media_volume, csv_data.destination_well)
+    pipette_media.transfer(volume=media_volumes,
+                            source=[media_plate.wells_by_name()[well] for well in media_wells],
+                            dest=[destination_plate.wells_by_name()[well] for well in media_destination_wells],
+                            new_tip="once")
 
-    # Load pipettes
-    right_pipette_tipracks = [
-        protocol.load_labware(
-            load_name=json_params["right_pipette_tiprack_name"], location=i
-        )
-        for i in json_params["right_pipette_tiprack_slot"]
-    ]
-    right_pipette = protocol.load_instrument(
-        instrument_name=json_params["right_pipette_name"],
-        mount=json_params["right_pipette_mount"],
-        tip_racks=right_pipette_tipracks,
-    )
-    left_pipette_tipracks = [
-        protocol.load_labware(
-            load_name=json_params["left_pipette_tiprack_name"], location=i
-        )
-        for i in json_params["left_pipette_tiprack_slot"]
-    ]
-    left_pipette = protocol.load_instrument(
-        instrument_name=json_params["left_pipette_name"],
-        mount=json_params["left_pipette_mount"],
-        tip_racks=left_pipette_tipracks,
-    )
-
-    pipette_culture = (
-        right_pipette
-        if choose_pipette_volume(single.culture_volume)
-        in json_params["right_pipette_name"]
-        else left_pipette
-    )  # Choose which pipette to use based on volume
-    pipette_inducer = (
-        right_pipette
-        if choose_pipette_volume(single.inducer_volume)
-        in json_params["right_pipette_name"]
-        else left_pipette
-    )
-    pipette_blank = (
-        right_pipette
-        if choose_pipette_volume(single.blank_volume)
-        in json_params["right_pipette_name"]
-        else left_pipette
-    )
-
-    pipette_channel_culture = (
-        multi if choose_pipette_channel(str(pipette_culture)) == "multi" else single
-    )  # Choose the csv wells based on the pipette being used
-    pipette_channel_inducer = (
-        multi if choose_pipette_channel(str(pipette_inducer)) == "multi" else single
-    )
-    pipette_channel_blank = (
-        multi if choose_pipette_channel(str(pipette_blank)) == "multi" else single
-    )
-
-    # Load hardware and labware
-    loaded_plates = {}  # Dictionary to keep track of loaded plates
-    blank_plate = load_or_reuse_labware(
-        protocol,
-        {
-            "name": json_params["blank_plate_name"],
-            "slot": json_params["blank_plate_slot"],
-        },
-        loaded_plates,
-    )
-    culture_plate = load_or_reuse_labware(
-        protocol,
-        {
-            "name": json_params["culture_plate_name"],
-            "slot": json_params["culture_plate_slot"],
-        },
-        loaded_plates,
-    )
-    inducer_plate = load_or_reuse_labware(
-        protocol,
-        {
-            "name": json_params["inducer_plate_name"],
-            "slot": json_params["inducer_plate_slot"],
-        },
-        loaded_plates,
-    )
-    destination_plate = load_or_reuse_labware(
-        protocol,
-        {
-            "name": json_params["destination_plate_name"],
-            "slot": json_params["destination_plate_slot"],
-        },
-        loaded_plates,
-    )
-
-    ########## BLANK TRANSFER ##########
-    source, destination, volume = filter_and_transfer(
-        pipette_channel_blank.blank_well,
-        pipette_channel_blank.destination_well,
-        pipette_channel_blank.blank_volume,
-    )
+    ########## CULTURE TRANSFER ##########
+    culture_wells, culture_volumes, culture_destination_wells = filter_data(pipette_culture, csv_data.culture_well, csv_data.culture_volume, csv_data.destination_well)
     pipette_culture.transfer(
-        volume=volume,
-        source=[blank_plate.wells_by_name()[well] for well in source],
-        dest=[destination_plate.wells_by_name()[well] for well in destination],
-        new_tip="once",
-    )
-
-    ##### TRANSFERRING CULTURE TO A PLATE SUITABLE FOR THE READER ##########
-    source, destination, volume = filter_and_transfer(
-        pipette_channel_culture.culture_well,
-        pipette_channel_culture.destination_well,
-        pipette_channel_culture.culture_volume,
-    )
-    pipette_culture.distribute(
-        volume=volume,
-        source=[culture_plate.wells_by_name()[well] for well in source],
-        dest=[destination_plate.wells_by_name()[well] for well in destination],
-        mix_before=(2, pipette_culture.max_volume / 2),
-        new_tip="once",
-    )
-    protocol.pause("Take t0 measurement")
-
-    ######## TRANSFERRING THE INDUCER ##########
-    source, destination, volume = filter_and_transfer(
-        pipette_channel_inducer.inducer_well,
-        pipette_channel_inducer.destination_well,
-        pipette_channel_inducer.inducer_volume,
-    )
-    pipette_inducer.transfer(
-        volume=volume,
-        source=[inducer_plate.wells_by_name()[well] for well in source],
-        dest=[destination_plate.wells_by_name()[well] for well in destination],
-        mix_before=(1, pipette_inducer.max_volume / 2),
-        mix_after=(3, pipette_inducer.max_volume / 2),
+        volume=culture_volumes,
+        source=[culture_plate.wells_by_name()[well] for well in culture_wells],
+        dest=[destination_plate.wells_by_name()[well] for well in culture_destination_wells],
         new_tip="always",
     )
+
+    protocol.pause("Incubate the culture plate with shaking untill it reaches the desired OD600 and click 'resume'.")
+
+    ########## INDUCER TRANSFER ##########
+    inducer_wells, inducer_volumes, inducer_destination_wells = filter_data(pipette_inducer, csv_data.inducer_well, csv_data.inducer_volume, csv_data.destination_well)
+    pipette_inducer.transfer(
+        volume=inducer_volumes,
+        source=[inducer_plate.wells_by_name()[well] for well in inducer_wells],
+        dest=[destination_plate.wells_by_name()[well] for well in inducer_destination_wells],
+        new_tip="always",
+    )
+    protocol.set_rail_lights(False)

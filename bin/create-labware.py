@@ -114,50 +114,47 @@ def create_csv_protocol_3(data_csv: str, parameters_json: str, output_csv: str) 
 
 def create_csv_protocol_4(data_csv, parameters_json, output_csv):
     """
-    This function creates a csv file from induction CSV and JSON files for the labware visualisation.
+    Creates a CSV file for labware visualization using data from CSV and JSON configuration files.
+    This function aggregates lab data by wells, calculates combined IDs from multiple reactants, and outputs
+    a consolidated CSV file for visualizing labware placement in protocol 4 experiments.
     """
     df = pd.read_csv(data_csv)
     with open(parameters_json, "r") as f:
         plate_slots = json.load(f)
 
-    df_all_reactants = []
-    for reactant in ["media", "culture", "inducer"]:
+    reactants = [key.replace('_plate_slot', '') for key in plate_slots if '_plate_slot' in key]
 
+    df_all_reactants = []
+    for reactant in reactants:
         well_col = f"{reactant}_well"
         volume_col = f"{reactant}_volume"
         id_col = f"{reactant}_id"
 
-        df_id_well_volume = df.groupby(well_col).agg({volume_col: "sum", id_col: "first"}).reset_index() # sum the volumes of reactants
-        df_id_well_volume.rename(columns={id_col: "id", well_col: "well_name", volume_col: "volume"}, inplace=True)
-        df_id_well_volume["location"] = plate_slots[f"{reactant}_plate_slot"]
-        df_id_well_volume["labware"] = plate_slots[f"{reactant}_plate_name"]
+        if well_col in df.columns and volume_col in df.columns and id_col in df.columns:
+            df_reactant = df.groupby(well_col).agg({volume_col: "sum", id_col: "first"}).reset_index()
+            df_reactant.rename(columns={id_col: "id", well_col: "well_name", volume_col: "volume"}, inplace=True)
+            df_reactant["location"] = plate_slots.get(f"{reactant}_plate_slot", 'Unknown')
+            df_reactant["labware"] = plate_slots.get(f"{reactant}_plate_name", 'Unknown')
+            
+            df = df.merge(df_reactant[['well_name', 'id']], left_on=well_col, right_on='well_name', suffixes=('', f'_{reactant}'))
+            df_all_reactants.append(df_reactant)
 
-        df_all_reactants.append(df_id_well_volume)
+    reactant_ids = [f"{reactant}_id" for reactant in reactants if f"{reactant}_id" in df.columns]
+    df['combined_id'] = df[reactant_ids].apply(lambda x: '/'.join(x.dropna().astype(str)), axis=1)
 
-    # df['combined_id'] = df.apply(map_ids, axis=1)
-    # print(df['combined_id'])
-
-    # Map these IDs to rows where both culture_volume and inducer_volume > 0
-    # def map_ids(row):
-    #     if row["culture_volume"] > 0 and row["inducer_volume"] > 0:
-    #         # Find the matching "ID" from the "culture_only_ids" series
-    #         culture_id = df.loc[(df["culture_well"] == row["culture_well"]) & (df["inducer_volume"] == 0), "id"]
-    #         print(culture_id)
-    #         if not culture_id.empty:
-    #             return row["id"] + "+" + culture_id.iloc[0]
-    #     return row["id"]
-
-    # df["combined_id"] = df.apply(map_ids, axis=1)
-    # print(df["combined_id"])
-
-    # # induction dataframe
     df_induction = pd.DataFrame({
-        "id": df["culture_id"],
+        "id": df['combined_id'],
         "well_name": df["destination_well"],
-        "volume": df[["media_volume", "culture_volume", "inducer_volume"]].sum(axis=1),
+        "volume": df[[col for col in df.columns if "volume" in col and any(r in col for r in reactants)]].sum(axis=1),
         "labware": plate_slots["destination_plate_name"],
         "location": plate_slots["destination_plate_slot"]
     })
+    
+    df_all_reactants.append(df_induction)
+
+    result_df = pd.concat(df_all_reactants, ignore_index=True)
+    result_df = result_df.reindex(columns=["id", "location", "labware", "well_name", "volume"])
+    result_df.to_csv(output_csv, index=False)
     
     df_all_reactants.append(df_induction) 
 

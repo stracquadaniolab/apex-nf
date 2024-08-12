@@ -93,23 +93,90 @@ process MAKE_PROTOCOL_4 {
     """
 }
 
-process SIMULATE_PROTOCOL {
+process SIMULATE_PROTOCOL_1 {
 
-    publishDir "${params.resultsDir}", mode: 'copy'
+    publishDir "${params.resultsDir}", pattern: "protocol-1-instructions.txt", mode: "copy"
+
 
     input:
         path(protocol)
 
     output:
-        path 'protocol_simulation.txt'
+        path "protocol-1-instructions.txt"
 
     script:
     """
-        opentrons_simulate ${protocol} > protocol_simulation.txt
+        opentrons_simulate ${protocol} > protocol-1-instructions.txt
     """
 
     stub: 
     """
-        touch protocol_simulation.txt
+        touch protocol-1-instructions.txt
+    """
+}
+
+process SIMULATE_PROTOCOL_2 {
+
+    publishDir "${params.resultsDir}", pattern: "protocol-2-instructions.txt", mode: "copy"
+
+
+    input:
+        path(protocol)
+
+    output:
+        path "protocol-2-instructions.txt"
+
+    script:
+    """
+        opentrons_simulate ${protocol} > protocol-2-instructions.txt
+    """
+
+    stub: 
+    """
+        touch protocol-2-instructions.txt
+    """
+}
+
+process SIMULATE_PROTOCOL_3 {
+
+    publishDir "${params.resultsDir}", pattern: "protocol-3-instructions.txt", mode: "copy"
+
+
+    input:
+        path(protocol)
+
+    output:
+        path "protocol-3-instructions.txt"
+
+    script:
+    """
+        opentrons_simulate ${protocol} > protocol-3-instructions.txt
+    """
+
+    stub: 
+    """
+        touch protocol-3-instructions.txt
+    """
+}
+
+process SIMULATE_PROTOCOL_4 {
+
+    publishDir "${params.resultsDir}", pattern: "protocol-4-instructions.txt", mode: "copy"
+
+
+    input:
+        path(protocol)
+
+    output:
+        path "protocol-4-instructions.txt"
+
+    script:
+    """
+        opentrons_simulate ${protocol} > protocol-4-instructions.txt
+    """
+
+    stub: 
+    """
+        touch protocol-4-instructions.txt
     """
 }
