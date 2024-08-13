@@ -9,7 +9,7 @@
         "media_plate_slot":2,
         "destination_plate_name":"usascientific_96_wellplate_2.4ml_deep",
         "destination_plate_slot":3,
-        "agar_plate_name":"armadillo_96_wellplate_200ul_pcr_full_skirt",
+        "agar_plate_name":"nunc96grid_96_wellplate_10ul",
         "agar_plate_slot": [1],
         "agar_plate_area":9469.2,
         "empty_agar_plate_weight":[38.92],

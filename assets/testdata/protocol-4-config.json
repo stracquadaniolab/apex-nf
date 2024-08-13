@@ -9,7 +9,7 @@
     "media_plate_slot":4,
     "culture_plate_name":"usascientific_96_wellplate_2.4ml_deep",
     "culture_plate_slot":1,
-    "inducer_plate_name":"usascientific_96_wellplate_2.4ml_deep",
+    "inducer_plate_name":"armadillo_96_wellplate_200ul_pcr_full_skirt",
     "inducer_plate_slot":2,
     "destination_plate_name":"usascientific_96_wellplate_2.4ml_deep",
     "destination_plate_slot":3
