@@ -5,10 +5,10 @@ from collections import namedtuple, defaultdict
 from typing import Tuple, List, Dict, NamedTuple, Any, Optional
 
 metadata = {
-    "apiLevel": "2.13",
-    "protocolName": "Protocol 4 - Protein Expression Induction",
-    "description": "OT-2 protocol for inducing the protein expression.",
-    "author": "Martyna Kasprzyk",
+    "apiLevel": "2.15",
+    "protocolName": "Protocol 4: Protein Expression Induction",
+    "description": "OT-2 protocol for protein expression indcution.",
+    "author": "Stracquadanio Lab",
 }
 
 ##############################################
@@ -38,8 +38,8 @@ def load_csv_data(csv_content: str):
     data = {key: [] for key in csv_reader.fieldnames if key}
     for row in csv_reader:
         for key, value in row.items():
-            data[key].append(float(value) if 'volume' in key else value)
-    return namedtuple('ProtocolData', data.keys())(*[data[key] for key in data.keys()])
+            data[key].append(float(value) if "volume" in key else value)
+    return namedtuple("ProtocolData", data.keys())(*[data[key] for key in data.keys()])
     
 def load_or_reuse_labware(protocol: protocol_api.ProtocolContext, plate_info: Dict[str, str], loaded_plates: Dict[str, protocol_api.Labware]):
     """Load a plate into the protocol or reuse an existing one if the slot is already occupied."""    
@@ -47,27 +47,17 @@ def load_or_reuse_labware(protocol: protocol_api.ProtocolContext, plate_info: Di
     return loaded_plates[slot] if slot in loaded_plates else loaded_plates.setdefault(slot, protocol.load_labware(plate_info["name"], slot))
 
 def filter_data(pipette, sources: List[str], volumes: List[float], destinations: List[str]) -> Tuple[List[str], List[float], List[str]]:
-    """
-    Filters out sources, volumes, and destinations. Adjusts wells to start with 'A' for 8-channel pipettes, unless source is "NA".
-    Leaves data unmodified for single-channel pipettes except for filtering duplicate destinations.
-    """
+    """Filters out sources, volumes, and destinations. Adjusts wells to start with "A" for 8-channel pipettes, unless source is "NA".
+    Leaves data unmodified for single-channel pipettes."""
     seen_columns, filtered_sources, filtered_volumes, filtered_destinations = set(), [], [], []
     is_multi_channel = "8-Channel" in str(pipette)
     
     for source, volume, destination in zip(sources, volumes, destinations):
-        if source == "NA":
-            # formatted_source = source
-            pass
-        else:
-            formatted_source = 'A' + source[1:] if is_multi_channel else source
-
-        destination_column = destination[1:]
-        formatted_destination = 'A' + destination_column if is_multi_channel else destination
-
-        if formatted_destination in seen_columns:
-            continue 
-
+        if source == "NA" or (formatted_destination := "A" + destination[1:] if is_multi_channel else destination) in seen_columns:
+            continue
+        
         seen_columns.add(formatted_destination)
+        formatted_source = "A" + source[1:] if is_multi_channel and source != "NA" else source
         filtered_sources.append(formatted_source)
         filtered_volumes.append(volume)
         filtered_destinations.append(formatted_destination)
@@ -88,7 +78,7 @@ def select_pipette(volume: List[float], loaded_pipettes: Dict[str, protocol_api.
     """ Determine the appropriate pipette based on the volume and available pipettes. """
     if len(loaded_pipettes) == 1:
         return next(iter(loaded_pipettes.values()))
-    pipette_type = "p20" if min(volume, default=float('inf')) <= 20 else "p300"
+    pipette_type = "p20" if min(volume, default=float("inf")) <= 20 else "p300"
     for pipette_name, pipette in loaded_pipettes.items():
         if pipette_type in pipette_name:
             return pipette
@@ -98,6 +88,7 @@ def run(protocol: protocol_api.ProtocolContext):
     """Main function for running the protocol."""
     json_params = load_json_data(INPUT_JSON_FILE)
     csv_data = load_csv_data(INPUT_CSV_FILE)
+    protocol.set_rail_lights(True)
     
     loaded_pipettes = setup_pipettes(protocol, json_params)
     pipette_media = select_pipette(csv_data.media_volume, loaded_pipettes)
@@ -110,7 +101,6 @@ def run(protocol: protocol_api.ProtocolContext):
     inducer_plate = load_or_reuse_labware(protocol, {"name": json_params["inducer_plate_name"], "slot": json_params["inducer_plate_slot"]}, loaded_plates)
     destination_plate = load_or_reuse_labware(protocol, {"name": json_params["destination_plate_name"], "slot": json_params["destination_plate_slot"]}, loaded_plates)
 
-    protocol.set_rail_lights(True)
     ########## DISTRIBUTE MEDIA ##########
     media_wells, media_volumes, media_destination_wells = filter_data(pipette_media, csv_data.media_well, csv_data.media_volume, csv_data.destination_well)
     pipette_media.transfer(volume=media_volumes,
@@ -124,10 +114,12 @@ def run(protocol: protocol_api.ProtocolContext):
         volume=culture_volumes,
         source=[culture_plate.wells_by_name()[well] for well in culture_wells],
         dest=[destination_plate.wells_by_name()[well] for well in culture_destination_wells],
-        new_tip="always",
+        mix_before=(2, 20),
+        mix_after=(1, 20),
+        new_tip="always"
     )
 
-    protocol.pause("Incubate the culture plate with shaking untill it reaches the desired OD600 and click 'resume'.")
+    protocol.pause("Incubate the culture plate with shaking untill it reaches the desired growth phase and click 'resume'.")
 
     ########## INDUCER TRANSFER ##########
     inducer_wells, inducer_volumes, inducer_destination_wells = filter_data(pipette_inducer, csv_data.inducer_well, csv_data.inducer_volume, csv_data.destination_well)
@@ -135,6 +127,7 @@ def run(protocol: protocol_api.ProtocolContext):
         volume=inducer_volumes,
         source=[inducer_plate.wells_by_name()[well] for well in inducer_wells],
         dest=[destination_plate.wells_by_name()[well] for well in inducer_destination_wells],
+        mix_after=(1, 20),
         new_tip="always",
     )
     protocol.set_rail_lights(False)

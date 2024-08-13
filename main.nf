@@ -12,7 +12,8 @@ workflow PROTOCOL_1 {
         file("$params.protocol_template_dir")
     )
     SIMULATE_PROTOCOL_1(
-        MAKE_PROTOCOL_1.out
+        MAKE_PROTOCOL_1.out,
+        file("$params.opentrons_labware_dir")
     )
     CREATE_LABWARE_CSV_1(
         tuple(file("$params.protocol_1_data"), file("$params.protocol_1_config"))
@@ -36,7 +37,8 @@ workflow PROTOCOL_2 {
         file("$params.protocol_template_dir")
     )
     SIMULATE_PROTOCOL_2(
-        MAKE_PROTOCOL_2.out
+        MAKE_PROTOCOL_2.out,
+        file("$params.opentrons_labware_dir")
     )
     CREATE_LABWARE_CSV_2(
         tuple(file("$params.protocol_2_data"), file("$params.protocol_2_config"))
@@ -62,7 +64,8 @@ workflow PROTOCOL_3 {
         file("$params.protocol_template_dir")
     )
     SIMULATE_PROTOCOL_3(
-        MAKE_PROTOCOL_3.out
+        MAKE_PROTOCOL_3.out,
+        file("$params.opentrons_labware_dir")
     )
     CREATE_LABWARE_CSV_3(
         tuple(file("$params.protocol_3_data"), file("$params.protocol_3_config"))
@@ -88,7 +91,8 @@ workflow PROTOCOL_4 {
         file("$params.protocol_template_dir")
     )
     SIMULATE_PROTOCOL_4(
-        MAKE_PROTOCOL_4.out
+        MAKE_PROTOCOL_4.out,
+        file("$params.opentrons_labware_dir")
     )
     CREATE_LABWARE_CSV_4(
         tuple(file("$params.protocol_4_data"), file("$params.protocol_4_config"))

@@ -95,88 +95,92 @@ process MAKE_PROTOCOL_4 {
 
 process SIMULATE_PROTOCOL_1 {
 
-    publishDir "${params.resultsDir}", pattern: "protocol-1-instructions.txt", mode: "copy"
+    publishDir "${params.resultsDir}", pattern: "protocol-1-simulation.txt", mode: "copy"
 
 
     input:
         path(protocol)
+        path(labware)
 
     output:
-        path "protocol-1-instructions.txt"
+        path "protocol-1-simulation.txt"
 
     script:
     """
-        opentrons_simulate ${protocol} > protocol-1-instructions.txt
+        opentrons_simulate ${protocol} -L ${labware} > protocol-1-simulation.txt
     """
 
     stub: 
     """
-        touch protocol-1-instructions.txt
+        touch protocol-1-simulation.txt
     """
 }
 
 process SIMULATE_PROTOCOL_2 {
 
-    publishDir "${params.resultsDir}", pattern: "protocol-2-instructions.txt", mode: "copy"
+    publishDir "${params.resultsDir}", pattern: "protocol-2-simulation.txt", mode: "copy"
 
 
     input:
         path(protocol)
+        path(labware)
 
     output:
-        path "protocol-2-instructions.txt"
+        path "protocol-2-simulation.txt"
 
     script:
     """
-        opentrons_simulate ${protocol} > protocol-2-instructions.txt
+        opentrons_simulate ${protocol} -L ${labware} > protocol-2-simulation.txt
     """
 
     stub: 
     """
-        touch protocol-2-instructions.txt
+        touch protocol-2-simulation.txt
     """
 }
 
 process SIMULATE_PROTOCOL_3 {
 
-    publishDir "${params.resultsDir}", pattern: "protocol-3-instructions.txt", mode: "copy"
+    publishDir "${params.resultsDir}", pattern: "protocol-3-simulation.txt", mode: "copy"
 
 
     input:
         path(protocol)
+        path(labware)
 
     output:
-        path "protocol-3-instructions.txt"
+        path "protocol-3-simulation.txt"
 
     script:
     """
-        opentrons_simulate ${protocol} > protocol-3-instructions.txt
+        opentrons_simulate ${protocol} -L ${labware} > protocol-3-simulation.txt
     """
 
     stub: 
     """
-        touch protocol-3-instructions.txt
+        touch protocol-3-simulation.txt
     """
 }
 
 process SIMULATE_PROTOCOL_4 {
 
-    publishDir "${params.resultsDir}", pattern: "protocol-4-instructions.txt", mode: "copy"
+    publishDir "${params.resultsDir}", pattern: "protocol-4-simulation.txt", mode: "copy"
 
 
     input:
         path(protocol)
+        path(labware)
 
     output:
-        path "protocol-4-instructions.txt"
+        path "protocol-4-simulation.txt"
 
     script:
     """
-        opentrons_simulate ${protocol} > protocol-4-instructions.txt
+        opentrons_simulate ${protocol} -L ${labware} > protocol-4-simulation.txt
     """
 
     stub: 
     """
-        touch protocol-4-instructions.txt
+        touch protocol-4-simulation.txt
     """
 }

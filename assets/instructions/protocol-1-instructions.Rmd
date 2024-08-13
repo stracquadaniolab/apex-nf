@@ -1,5 +1,5 @@
 ---
-title: "Instructions"
+title: "APEX Instructions"
 output: pdf_document
 params:
   json_path: NULL
@@ -13,28 +13,26 @@ library(knitr)
 json_data <- fromJSON(file = params$json_path)
 ```
 \vspace{-1.5cm}
-## Protocol 1: Heat shock transformations
+## Protocol 1: Heat Shock Transformations in OT-2
 
 ### Overview
-DNA is transferred to competent cells.
-Pre heat-shock, the cells and added DNA are incubated at `r json_data$pre_shock_incubation_temp` °C for `r json_data$pre_shock_incubation_time` minutes.
-Heat-shock is carried out at `r json_data$heat_shock_temp` °C for `r json_data$heat_shock_time` seconds.
-Post heat-shock, the transformed cells are incubated at `r json_data$post_shock_incubation_temp` °C for `r json_data$post_shock_incubation_time` minutes.
-The recovery medium is added and cells are incubated at `r json_data$recovery_temp`°C for `r json_data$recovery_time` minutes.
+Competent cells are distributed into destination plate.
+DNA is added to competent cells.
+Pre heat shock, the cells and added DNA are incubated at `r json_data$pre_shock_incubation_temp` °C for `r json_data$pre_shock_incubation_time` minutes.
+Heat shock is carried out at `r json_data$heat_shock_temp` °C for `r json_data$heat_shock_time` seconds.
+Post heat shock, the cells are incubated at `r json_data$post_shock_incubation_temp` °C for `r json_data$post_shock_incubation_time` minutes.
+The recovery medium is added and cells are incubated at `r json_data$recovery_temp` °C for `r json_data$recovery_time` minutes.
 
 ### Preparation
-Prepare the reagents and labware according to the below diagrams.
-Volumes (uL) indicate how much of reagents will be used, so add additional volume.
+Prepare the necessary reagents and labware as outlined in the layout provided below. 
+Listed volumes are in `r "$\\mu$L"` and indicate the amount of each reagent required. 
+Ensure to include an additional volume.
 
 ```{r import-labware-images, results='asis', echo=FALSE}
-# Read all image files from the directory
 image_files <- list.files(path = params$labware_images_dir, pattern = "\\.png$", full.names = TRUE)
-# Sort files numerically and alphabetically
 image_files <- sort(image_files)
 
-# Print images in Markdown format, 2 per row
 for (i in seq_along(image_files)) {
-  # Start a new line for every pair of images
   if (i %% 2 == 1 && i > 1) {
     cat('\\newline\n')
   }
@@ -48,10 +46,10 @@ for (i in seq_along(image_files)) {
 ```
 
 ### Deck Loading
-Check that `r json_data$right_pipette_name` is in the right mount and `r json_data$left_pipette_name` is in the left mount.
-**Slot `r json_data$right_pipette_tiprack_slot`** load `r json_data$right_pipette_tiprack_name` for the `r json_data$right_pipette_name` pipette.
-**Slot `r json_data$left_pipette_tiprack_slot`** load `r json_data$left_pipette_tiprack_name` for the `r json_data$left_pipette_name` pipette.
-**Slot `r json_data$dna_plate_slot`** load `r json_data$dna_plate_name` containing DNA.
-**Slot `r json_data$cells_plate_slot`** load `r json_data$cells_plate_name` containing competent cells.
-**Slot `r json_data$media_plate_slot`** load `r json_data$media_plate_name` containing recovery medium.
-**Slot 7,8,10,11** load a thermocycler and turn it on. Load `r json_data$transformation_plate_name` into the thermocycler when instructed on the screen.
+Check that `r json_data$right_pipette_name` is in the right mount and `r json_data$left_pipette_name` is in the left mount.  
+**Slot `r json_data$right_pipette_tiprack_slot`** load `r json_data$right_pipette_tiprack_name` for the `r json_data$right_pipette_name` pipette.  
+**Slot `r json_data$left_pipette_tiprack_slot`** load `r json_data$left_pipette_tiprack_name` for the `r json_data$left_pipette_name` pipette.  
+**Slot `r json_data$dna_plate_slot`** load `r json_data$dna_plate_name` containing DNA.  
+**Slot `r json_data$cells_plate_slot`** load `r json_data$cells_plate_name` containing competent cells.  
+**Slot `r json_data$media_plate_slot`** load `r json_data$media_plate_name` containing recovery medium.  
+**Slot 7,8,10,11** load a thermocycler and turn it on. Load `r json_data$transformation_plate_name` into the thermocycler when instructed on the screen.  

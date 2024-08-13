@@ -13,7 +13,7 @@ library(knitr)
 json_data <- fromJSON(file = params$json_path)
 ```
 \vspace{-1.5cm}
-## Protocol 4: Protein Expression induction in OT-2
+## Protocol 4: Protein Expression Induction in OT-2
 
 ### Overview
 Fresh antibiotic media is distributed into the destination plate, followed by aliquoting and inoculating overnight cultures into this media. 
