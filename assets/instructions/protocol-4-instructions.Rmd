@@ -1,5 +1,5 @@
 ---
-title: "APEX Instructions"
+title: ""
 output: pdf_document
 params:
   json_path: NULL
@@ -7,47 +7,106 @@ params:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 library(rjson)
 library(knitr)
 json_data <- fromJSON(file = params$json_path)
 ```
-\vspace{-1.5cm}
+
+# APEX Instructions
 ## Protocol 4: Protein Expression Induction in OT-2
 
-### Overview
-Fresh antibiotic media is distributed into the destination plate, followed by aliquoting and inoculating overnight cultures into this media. 
-The cells are then incubated with shaking to reach the desired growth phase. 
-After achieving the desired `r "$OD_{600}$"`, a chemical inducer is added to induce protein expression. 
-The cultures continue to be incubated with shaking post-induction for protein production.
+### Deck Loading
+1. Load pipettes:
+   ```{r pipette-check, results='asis'}
+   if(is.null(json_data$right_pipette_name) || 
+      tolower(json_data$right_pipette_name) == "na" || 
+      json_data$right_pipette_name == "NA") {
+     cat("   - **Right mount**: No pipette loaded\n")
+   } else {
+     cat(paste0("   - **Right mount**: Confirm `", json_data$right_pipette_name, "` is properly installed\n"))
+   }
+   
+   # Left pipette check
+   if(is.null(json_data$left_pipette_name) || 
+      tolower(json_data$left_pipette_name) == "na" || 
+      json_data$left_pipette_name == "NA") {
+     cat("   - **Left mount**: No pipette loaded\n")
+   } else {
+     cat(paste0("   - **Left mount**: Confirm `", json_data$left_pipette_name, "` is properly installed\n"))
+   }
+   ```
+
+2. Load tip racks:
+   ```{r tiprack-check, results='asis'}
+   # Right pipette tiprack check
+   if(!is.null(json_data$right_pipette_name) && 
+      tolower(json_data$right_pipette_name) != "na" && 
+      json_data$right_pipette_name != "NA") {
+     cat(paste0("   - **Slot `", paste(json_data$right_pipette_tiprack_slot, collapse=", "), "`**: Position `", 
+               json_data$right_pipette_tiprack_name, "` for use with the `", 
+               json_data$right_pipette_name, "` pipette\n"))
+   }
+   
+   # Left pipette tiprack check
+   if(!is.null(json_data$left_pipette_name) && 
+      tolower(json_data$left_pipette_name) != "na" && 
+      json_data$left_pipette_name != "NA") {
+     cat(paste0("   - **Slot `", paste(json_data$left_pipette_tiprack_slot, collapse=", "), "`**: Position `", 
+               json_data$left_pipette_tiprack_name, "` for use with the `", 
+               json_data$left_pipette_name, "` pipette\n"))
+   }
+   ```
+
+3. Load plates:
+   - **Slot `r json_data$culture_plate_slot`**: Place `r json_data$culture_plate_name` containing overnight cultures
+   - **Slot `r json_data$media_plate_slot`**: Place `r json_data$media_plate_name` containing fresh antibiotic-media
+   - **Slot `r json_data$inducer_plate_slot`**: Place `r json_data$inducer_plate_name` containing chemical inducer
+   - **Slot `r json_data$destination_plate_slot`**: Place `r json_data$destination_plate_name` where protein expression will be induced
 
 ### Preparation
-Prepare the necessary reagents and labware as outlined in the layout provided below. 
-Listed volumes are in `r "$\\mu$L"` and indicate the amount of each reagent required. 
-Ensure to include an additional volume.
+Prepare reagents and labware according to the plate layout shown below. All volumes are in `r "$\\mu$L"`. Include additional volume for accurate pipetting.
 
-```{r import-labware-images, results='asis', echo=FALSE}
+```{r source-plate-images, results='asis', echo=FALSE}
 image_files <- list.files(path = params$labware_images_dir, pattern = "\\.png$", full.names = TRUE)
 image_files <- sort(image_files)
 
-for (i in seq_along(image_files)) {
-  if (i %% 2 == 1 && i > 1) {
-    cat('\\newline\n')
+if(length(image_files) > 1) {
+  for (i in 1:(length(image_files)-1)) {
+    if (i %% 2 == 1 && i > 1) {
+      cat('\n\n')
+    }
+    cat(sprintf('![](%s){width=49\\%%}', image_files[i]))
+    if (i %% 2 != 0 && i < (length(image_files)-1)) {
+      cat(' ')
+    }
   }
-  
-  cat(sprintf('![](%s){width=49%%}', image_files[i]))
-
-  if (i %% 2 != 0 && i < length(image_files)) {
-    cat(' ')
-  }
+} else {
+  cat("*No plate layout images available*")
 }
 ```
 
-### Deck Loading
-Check that `r json_data$right_pipette_name` is in the right mount and `r json_data$left_pipette_name` is in the left mount.  
-**Slot `r json_data$right_pipette_tiprack_slot`** load `r json_data$right_pipette_tiprack_name` for the `r json_data$right_pipette_name` pipette.  
-**Slot `r json_data$left_pipette_tiprack_slot`** load `r json_data$left_pipette_tiprack_name` for the `r json_data$left_pipette_name` pipette.  
-**Slot `r json_data$media_plate_slot`** load `r json_data$media_plate_name` containing fresh antibiotic-media.  
-**Slot `r json_data$inducer_plate_slot`** load `r json_data$inducer_plate_name` containing chemical inducer.  
-**Slot `r json_data$culture_plate_slot`** load `r json_data$culture_plate_name` containing overnight cultures.  
-**Slot `r json_data$destination_plate_slot`** load `r json_data$inducer_plate_name` where protein expression will be induced.  
+### Protocol Execution
+1. **Media Distribution**: APEX dispenses fresh antibiotic-containing media into the destination plate.
+
+2. **Culture Inoculation**: APEX resuspends the overnight cultures x times with volume of x and transfers the cells to the destination plate containing fresh media.
+
+3. **Growth Phase**: When prompted by the robot, remove the plate with sub-culture from the deck and incubate it with shaking until cultures reach the desired `r "$OD_{600}$"` value. Return the plate on the deck and resume the protocol.
+
+4. **Induction**: APEX adds chemical inducer to each well to initiate protein expression.
+
+5. **Protein Production**: Continue incubation with shaking for the specified post-induction period to allow protein production.
+
+### Final Plate Layout
+Once the protocol is completed, the protein expression plate will have the following layout:
+
+```{r destination-plate-image, results='asis', echo=FALSE}
+image_files <- list.files(path = params$labware_images_dir, pattern = "\\.png$", full.names = TRUE)
+image_files <- sort(image_files)
+
+if(length(image_files) > 0) {
+  cat(sprintf('![](%s){width=70\\%%}', image_files[length(image_files)]))
+} else {
+  cat("*No destination plate image available*")
+}
+```

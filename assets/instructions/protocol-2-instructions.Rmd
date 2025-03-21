@@ -1,50 +1,73 @@
 ---
-title: "APEX Instructions"
+title: ""
 output: pdf_document
 params:
   json_path: NULL
   labware_images_dir: NULL
 ---
-
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 library(rjson)
 library(knitr)
 json_data <- fromJSON(file = params$json_path)
 ```
-\vspace{-1.5cm}
+
+# APEX Instructions
 ## Protocol 2: Colony Selection in OT-2
 
-### Overview
-Cells are spotted on the total of `r length(json_data$agar_plate_slot) ` agar plates.
-The pipette aspirates additional `r json_data$additional_volume` $\mu$L of transformed cells.
-The spotting height above the agar is set at `r json_data$spotting_height` (mm).
-The agar height is calculated automatically per plate based on:
-the plate weight without (`r json_data$empty_agar_plate_weight` g) and with agar (`r json_data$agar_plate_weight` g), 
-and agar density of `r json_data$agar_density` ($g cm^{-3}$).
+### Deck Loading
+1. Load pipettes:
+   - **Mount `r json_data$pipette_mount`**: Confirm `r json_data$pipette_name` is properly installed
+
+2. Load tip racks:
+   - **Slot `r json_data$tiprack_slots`**: Place `r json_data$tiprack_name` for use with `r json_data$pipette_name` pipette
+
+3. Load plates:
+   - **`Thermocycler`**: Place `r json_data$transformation_plate_name` containing cells to be spotted
+   - **Slot `r json_data$agar_plate_slot`**: Place `r json_data$agar_plate_name` with LB agar
 
 ### Preparation
-The plates are spotted in `r "$\\mu$L"` according to the layout below.
+Prepare reagents and labware according to the plate layout shown below. All volumes are in `r "$\\mu$L"`. Include additional volume for accurate pipetting.
 
-```{r import-labware-images, results='asis', echo=FALSE}
+```{r source-plate-images, results='asis', echo=FALSE}
 image_files <- list.files(path = params$labware_images_dir, pattern = "\\.png$", full.names = TRUE)
 image_files <- sort(image_files)
-
-for (i in seq_along(image_files)) {
-  if (i %% 2 == 1 && i > 1) {
-    cat('\\newline\n')
+if(length(image_files) > 1) {
+  for (i in 1:(length(image_files)-1)) {
+    if (i %% 2 == 1 && i > 1) {
+      cat('\n\n')
+    }
+    cat(sprintf('![](%s){width=49\\%%}', image_files[i]))
+    if (i %% 2 != 0 && i < (length(image_files)-1)) {
+      cat(' ')
+    }
   }
-  
-  cat(sprintf('![](%s){width=49%%}', image_files[i]))
-
-  if (i %% 2 != 0 && i < length(image_files)) {
-    cat(' ')
-  }
+} else {
+  cat("*No plate layout images available*")
 }
 ```
 
-### Deck Loading
-Check that `r json_data$pipette_name` is in the `r json_data$pipette_mount` mount.  
-**Slot `r json_data$tiprack_slots`** load `r json_data$tiprack_name` for the `r json_data$pipette_name` pipette.  
-**Slot `r json_data$source_plate_slot`** load `r json_data$source_plate_name` containing cells to be spotted.  
-**Slot `r json_data$agar_plate_slot`** load `r json_data$agar_plate_name` with agar.  
+### Protocol Execution
+1. **Cell Aspiration**: APEX aspirates transformed cells with an additional `r json_data$additional_volume` `r "$\\mu$L"` volume to ensure accurate spotting.
+
+2. **Agar Height Calculation**: APEX automatically calculates the agar height for each plate based on:
+   - Empty plate weight: `r json_data$empty_agar_plate_weight` g
+   - Plate weight with agar (specified in the CSV file)
+   - Agar density: `r json_data$agar_density` g/cm³
+
+3. **Colony Spotting**: Cells are spotted onto agar plate(s) with the following parameters:
+   - Spotting height above agar: `r json_data$spotting_height` mm
+   
+### Final Plate Layout
+Once the protocol is competed, agar plate(s) with spotted cells will have the following layout(s):
+
+```{r destination-plate-image, results='asis', echo=FALSE}
+image_files <- list.files(path = params$labware_images_dir, pattern = "\\.png$", full.names = TRUE)
+image_files <- sort(image_files)
+
+if(length(image_files) > 0) {
+  cat(sprintf('![](%s){width=70\\%%}', image_files[length(image_files)]))
+} else {
+  cat("*No destination plate image available*")
+}
+```

@@ -2,12 +2,12 @@ from opentrons import protocol_api
 import csv
 import json
 from collections import namedtuple, defaultdict
-from typing import Tuple, List, Dict, NamedTuple, Any, Optional
+from typing import Tuple, List, Dict, Any
 
 metadata = {
-    "apiLevel": "2.15",
+    "apiLevel": "2.16",
     "protocolName": "Protocol 1: Heat shock transformation",
-    "description": "OT-2 protocol for standard E. coli heat shock transformation using thermocycler.",
+    "description": "OT-2 protocol for standard E. coli heat shock transformation using Opentrons thermocycler.",
     "author": "Stracquadanio Lab"
 }
 
@@ -45,7 +45,7 @@ def load_or_reuse_labware(protocol: protocol_api.ProtocolContext, plate_info: Di
     slot = plate_info["slot"]
     return loaded_plates[slot] if slot in loaded_plates else loaded_plates.setdefault(slot, protocol.load_labware(plate_info["name"], slot))
 
-def filter_data(pipette, sources: List[str], volumes: List[float], destinations: List[str]) -> Tuple[List[str], List[float], List[str]]:
+def filter_compatible_data(pipette, sources: List[str], volumes: List[float], destinations: List[str]) -> Tuple[List[str], List[float], List[str]]:
     """Filters out "NA" sources and adjusts well identifiers for 8-channel pipettes."""
     seen_columns, filtered = set(), []
     is_multi_channel = "8-Channel" in str(pipette)
@@ -62,121 +62,161 @@ def filter_data(pipette, sources: List[str], volumes: List[float], destinations:
 
 def setup_pipettes(protocol: protocol_api.ProtocolContext, pipette_info: Dict[str, Any]) -> Dict[str, protocol_api.InstrumentContext]:
     """Load specified pipettes into the protocol based on configuration details provided."""
-    loaded_pipettes = {}
+    available_pipettes = {}
     for side in ["right", "left"]:
         if pipette_info[f"{side}_pipette_name"] != "NA":
             tip_racks = [protocol.load_labware(pipette_info[f"{side}_pipette_tiprack_name"], slot) for slot in pipette_info[f"{side}_pipette_tiprack_slot"]]
             pipette = protocol.load_instrument(pipette_info[f"{side}_pipette_name"], mount=side, tip_racks=tip_racks)
-            loaded_pipettes[pipette_info[f"{side}_pipette_name"]] = pipette
-    return loaded_pipettes
+            available_pipettes[pipette_info[f"{side}_pipette_name"]] = pipette
+    return available_pipettes
 
-def select_pipette(volume: List[float], loaded_pipettes: Dict[str, protocol_api.InstrumentContext]) -> protocol_api.InstrumentContext:
-    """ Determine the appropriate pipette based on the volume and available pipettes. """
-    if len(loaded_pipettes) == 1:
-        return next(iter(loaded_pipettes.values()))
-    pipette_type = "p20" if min(volume, default=float("inf")) <= 20 else "p300"
-    for pipette_name, pipette in loaded_pipettes.items():
-        if pipette_type in pipette_name:
-            return pipette
+def select_pipette(
+    volume: List[float],
+    available_pipettes: Dict[str, protocol_api.InstrumentContext],
+    is_distribution: bool = False,
+    source_to_volumes_map: Dict = None,
+) -> protocol_api.InstrumentContext:
+    """Determine the appropriate pipette based on the volume and available pipettes."""
+    if len(available_pipettes) == 1:
+        return next(iter(available_pipettes.values()))
+    if is_distribution and source_to_volumes_map:
+        max_aspirate_volume = max(
+            sum(volumes) for volumes in source_to_volumes_map.values()
+        )
+        if max_aspirate_volume <= 20:
+            pipette_type = "p20"
+        elif max_aspirate_volume <= 300:
+            pipette_type = "p300"
+        else:
+            pipette_type = "p1000"
+    else:
+        min_volume = min(volume)
+        if min_volume <= 20:
+            pipette_type = "p20"
+        elif min_volume <= 300:
+            pipette_type = "p300"
+        else:
+            pipette_type = "p1000"
+    fallback_order = {
+        "p1000": ["p1000", "p300", "p20"],
+        "p300": ["p300", "p1000", "p20"],
+        "p20": ["p20", "p300", "p1000"],
+    }
+    for type_to_try in fallback_order[pipette_type]:
+        for pipette_name, pipette in available_pipettes.items():
+            if type_to_try in pipette_name:
+                return pipette
     return None
 
 def run(protocol: protocol_api.ProtocolContext):
     """Main function for running the protocol."""
-    json_params = load_json_data(INPUT_JSON_FILE)
+    params = load_json_data(INPUT_JSON_FILE)
     data = load_csv_data(INPUT_CSV_FILE)
     protocol.set_rail_lights(True)
 
-    loaded_pipettes = setup_pipettes(protocol, json_params)
-    pipette_cells = select_pipette(data.cells_volume, loaded_pipettes)
-    pipette_dna = select_pipette(data.dna_volume, loaded_pipettes)
-    pipette_media = select_pipette(data.media_volume, loaded_pipettes)
+    available_pipettes = setup_pipettes(protocol, params)
+    pipette_dna = select_pipette(data.dna_volume, available_pipettes)
+    pipette_media = select_pipette(data.media_volume, available_pipettes)
+
+    cells_distribution_map = defaultdict(list)
+    source_well_volumes = {}
+    for src, vol in zip(data.cells_source_well, data.cells_volume):
+        if src not in source_well_volumes:
+            source_well_volumes[src] = []
+        source_well_volumes[src].append(vol)
+    pipette_cells = select_pipette(
+        data.cells_volume,
+        available_pipettes,
+        is_distribution=True,
+        source_to_volumes_map=source_well_volumes,
+    )
 
     loaded_plates = {}
-    cells_plate = load_or_reuse_labware(protocol, {"name": json_params["cells_plate_name"], "slot": json_params["cells_plate_slot"]}, loaded_plates)
-    dna_plate = load_or_reuse_labware(protocol, {"name": json_params["dna_plate_name"], "slot": json_params["dna_plate_slot"]}, loaded_plates)
-    media_plate = load_or_reuse_labware(protocol, {"name": json_params["media_plate_name"], "slot": json_params["media_plate_slot"]}, loaded_plates)
+    cells_plate = load_or_reuse_labware(protocol, {"name": params["cells_plate_name"], "slot": params["cells_plate_slot"]}, loaded_plates)
+    dna_plate = load_or_reuse_labware(protocol, {"name": params["dna_plate_name"], "slot": params["dna_plate_slot"]}, loaded_plates)
+    media_plate = load_or_reuse_labware(protocol, {"name": params["media_plate_name"], "slot": params["media_plate_slot"]}, loaded_plates)
     
-    if json_params["destination_plate_slot"] ==  "thermocycler":
-        thermocycler_mod = protocol.load_module("thermocycler")
-        destination_plate = thermocycler_mod.load_labware(json_params["destination_plate_name"])
-        thermocycler_mod.set_block_temperature(temperature=json_params["pre_shock_incubation_temp"])
-        thermocycler_mod.open_lid()
-        protocol.pause("Put plate into the thermocycler module and click 'resume'.")
-    else:
-        destination_plate = protocol.load_labware(json_params["destination_plate_name"], json_params["destination_plate_slot"])
+    thermocycler_mod = protocol.load_module("thermocycler")
+    transformation_plate = thermocycler_mod.load_labware(params["transformation_plate_name"])
+    thermocycler_mod.set_block_temperature(temperature=params["pre_shock_incubation_temp"])
+    thermocycler_mod.open_lid()
 
-    ########## ADD COMPETENT CELLS ##########
-    protocol.comment("Adding competent cells:")
+    ########## DISTRIBUTE COMPETENT CELLS ##########
+    protocol.comment("Distributing competent cells.")
+    pipette_cells.flow_rate.aspirate = pipette_cells.flow_rate.aspirate / 2
+    pipette_cells.flow_rate.dispense = pipette_cells.flow_rate.dispense / 2
+    cells_source, cells_volume, cells_destination = filter_compatible_data(pipette_cells, data.cells_source_well, data.cells_volume, data.transformation_well)
+    for src, vol, dest in zip(cells_source, cells_volume, cells_destination):
+        cells_distribution_map[src].append((vol, dest))
+
     pipette_cells.pick_up_tip()
-    mixed_wells = set()
-    cells_source, cells_volume, cells_destination = filter_data(pipette_cells, data.cells_well, data.cells_volume, data.destination_well)
-    
-    cumulative_cell_volumes = defaultdict(float)
-    for src_well, vol_cells in zip(cells_source, cells_volume):
-        cumulative_cell_volumes[src_well] += vol_cells
-
-    for src_well, vol_cells, dest_well in zip(cells_source, cells_volume, cells_destination):
-        if src_well not in mixed_wells:
-            mix_volume = cumulative_cell_volumes[src_well] / 2
-            mix_volume = mix_volume if mix_volume <= pipette_cells.max_volume / 2 else pipette_cells.max_volume
-            pipette_cells.mix(1, mix_volume, cells_plate.wells_by_name()[src_well])
-            mixed_wells.add(src_well)
-        pipette_cells.transfer(volume=vol_cells,
-                                source=cells_plate.wells_by_name()[src_well],
-                                dest=destination_plate.wells_by_name()[dest_well],
-                                new_tip="never")
+    for src, volume_destination_pairs in cells_distribution_map.items():
+        volumes = [pair[0] for pair in volume_destination_pairs]
+        destinations = [pair[1] for pair in volume_destination_pairs]
+        mix_volume = sum(volumes)/2 if sum(volumes)/2 <= pipette_cells.max_volume else pipette_cells.max_volume
+        pipette_cells.distribute(
+            volume=volumes,
+            source=cells_plate.wells_by_name()[src],
+            dest=[transformation_plate.wells_by_name()[well] for well in destinations],
+            new_tip="never",
+            mix_before = (1, mix_volume),
+            blow_out=True,
+            blowout_location="source well",
+        )
     pipette_cells.drop_tip()
 
     ########## ADD DNA ##########
-    protocol.comment("Adding DNA:")
-    dna_source, dna_volume, dna_destination = filter_data(pipette_dna, data.dna_well, data.dna_volume, data.destination_well,)
+    protocol.comment("Adding DNA to cells.")
+    dna_source, dna_volume, dna_destination = filter_compatible_data(pipette_dna, data.dna_source_well, data.dna_volume, data.transformation_well)
+    cells_source, cells_volume, cells_destination = filter_compatible_data(pipette_dna, data.cells_source_well, data.cells_volume, data.transformation_well)
     for src_well, vol_dna, dest_well, vol_cells in zip(dna_source, dna_volume, dna_destination, cells_volume):
         pipette_dna.pick_up_tip()
         pipette_dna.aspirate(volume=vol_dna, location=dna_plate.wells_by_name()[src_well])
-        pipette_dna.dispense(volume=vol_dna, location=destination_plate.wells_by_name()[dest_well])
+        pipette_dna.dispense(volume=vol_dna, location=transformation_plate.wells_by_name()[dest_well])
         mix_volume = (vol_dna + vol_cells) / 2
         mix_volume = mix_volume if mix_volume <= pipette_dna.max_volume / 2 else pipette_dna.max_volume
-        pipette_dna.mix(repetitions=2, volume=mix_volume, location=destination_plate.wells_by_name()[dest_well])
-        pipette_dna.blow_out(location=destination_plate.wells_by_name()[dest_well])
-        pipette_dna.move_to(destination_plate.wells_by_name()[dest_well].bottom())  # To ensure droplets from the blow out do not remain on the tip
+        pipette_dna.mix(repetitions=2, volume=mix_volume, location=transformation_plate.wells_by_name()[dest_well], rate=0.5)
+        pipette_dna.blow_out(location=transformation_plate.wells_by_name()[dest_well])
+        pipette_dna.move_to(transformation_plate.wells_by_name()[dest_well].bottom())
         pipette_dna.drop_tip()
 
     ########## HEAT SHOCK TRANSFORMATION ##########
-    if json_params["destination_plate_slot"] ==  "thermocycler":
-        thermocycler_mod.close_lid()
-        thermocycler_mod.set_block_temperature(temperature=json_params["pre_shock_incubation_temp"], 
-                                            hold_time_minutes=json_params["pre_shock_incubation_time"])
-        protocol.comment("Starting heat shock transformation.")
-        thermocycler_mod.set_block_temperature(temperature=json_params["heat_shock_temp"], 
-                                            hold_time_seconds=json_params["heat_shock_time"])
-        thermocycler_mod.set_block_temperature(temperature=json_params["post_shock_incubation_temp"],
-                                            hold_time_minutes=json_params["post_shock_incubation_time"])
-        thermocycler_mod.open_lid()
-    else:
-        protocol.pause("Put plate into an external thermocycler for heat-shock transformation and return.")
+    protocol.comment("Starting heat shock transformation.")
+    max_cells_dna_volume = max([(vol_dna + vol_cells) for vol_dna, vol_cells in zip(dna_volume, cells_volume)])
+    thermocycler_mod.close_lid()
+    thermocycler_mod.set_block_temperature(temperature=params["pre_shock_incubation_temp"], 
+                                            hold_time_minutes=params["pre_shock_incubation_time"],
+                                            block_max_volume=max_cells_dna_volume)
+    thermocycler_mod.set_block_temperature(temperature=params["heat_shock_temp"], 
+                                            hold_time_seconds=params["heat_shock_time"],
+                                            block_max_volume=max_cells_dna_volume)
+    thermocycler_mod.set_block_temperature(temperature=params["post_shock_incubation_temp"],
+                                            hold_time_minutes=params["post_shock_incubation_time"],
+                                            block_max_volume=max_cells_dna_volume)
+    thermocycler_mod.open_lid()
 
     ######## ADD RECOVERY MEDIUM ##########
-    protocol.comment("Adding recovery media:")
-    media_source, media_volume, media_destination = filter_data(pipette_media, data.media_well, data.media_volume, data.destination_well)
+    protocol.comment("Adding recovery media to transformed cells.")
+    media_source, media_volume, media_destination = filter_compatible_data(pipette_media, data.media_source_well, data.media_volume, data.transformation_well)
+    cells_source, cells_volume, cells_destination = filter_compatible_data(pipette_media, data.cells_source_well, data.cells_volume, data.transformation_well)
     for src_well, vol_media, dest_well, vol_cells in zip(media_source, media_volume, media_destination, cells_volume):
         mix_volume = (vol_media + vol_cells) / 2
         mix_volume = mix_volume if mix_volume <= pipette_media.max_volume / 2 else pipette_media.max_volume
         pipette_media.transfer(volume=vol_media,
                                     source=media_plate.wells_by_name()[src_well],
-                                    dest=destination_plate.wells_by_name()[dest_well],
+                                    dest=transformation_plate.wells_by_name()[dest_well],
                                     mix_after=(2, mix_volume),
                                     new_tip="always")
 
     ######## RECOVERY INCUBATION ##########
-    if json_params["destination_plate_slot"] ==  "thermocycler":
-        thermocycler_mod.close_lid()
-        thermocycler_mod.set_lid_temperature(temperature=json_params["recovery_temp"])
-        thermocycler_mod.set_block_temperature(temperature=json_params["recovery_temp"], 
-                                            hold_time_minutes=json_params["recovery_time"])
-        thermocycler_mod.deactivate_lid()
-        thermocycler_mod.deactivate()
-        protocol.set_rail_lights(False)
-    else:
-        protocol.comment("Put plate into an external thermocycler for incubation.")
-
+    protocol.comment("Starting recovery incubation.")
+    max_cells_media_volume = max([(vol_cells + vol_media) for vol_cells, vol_media in zip(cells_volume, media_volume)])
+    thermocycler_mod.close_lid()
+    thermocycler_mod.set_lid_temperature(temperature=params["recovery_temp"])
+    thermocycler_mod.set_block_temperature(temperature=params["recovery_temp"], 
+                                            hold_time_minutes=params["recovery_time"],
+                                            block_max_volume=max_cells_media_volume)
+    thermocycler_mod.deactivate_lid()
+    thermocycler_mod.deactivate()
     protocol.set_rail_lights(False)
+    protocol.comment("Protocol successfully completed.")
