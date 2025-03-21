@@ -120,3 +120,72 @@ process MAKE_INSTRUCTIONS_4 {
         touch protocol-4-instructions.pdf
     """
 }
+
+process MAKE_INSTRUCTIONS_5 {
+
+    publishDir "${params.resultsDir}", pattern: "protocol-5-instructions.pdf", mode: 'copy'
+
+    input:
+        path(markdown_file)
+        path(config)
+        path(plots)
+
+    output:
+    path "protocol-5-instructions.pdf"
+
+    script:
+    """
+    R -e "rmarkdown::render('${markdown_file}', output_file = 'protocol-5-instructions.pdf', params = list(json_path = '${config}', labware_images_dir = '${plots}'))"
+    """
+
+    stub: 
+    """
+        touch protocol-5-instructions.pdf
+    """
+}
+
+process MAKE_INSTRUCTIONS_6 {
+
+    publishDir "${params.resultsDir}", pattern: "protocol-6-instructions.pdf", mode: 'copy'
+
+    input:
+        path(markdown_file)
+        path(config)
+        path(plots)
+
+    output:
+    path "protocol-6-instructions.pdf"
+
+    script:
+    """
+    R -e "rmarkdown::render('${markdown_file}', output_file = 'protocol-6-instructions.pdf', params = list(json_path = '${config}', labware_images_dir = '${plots}'))"
+    """
+
+    stub: 
+    """
+        touch protocol-6-instructions.pdf
+    """
+}
+
+process MAKE_INSTRUCTIONS_7 {
+
+    publishDir "${params.resultsDir}", pattern: "protocol-7-instructions.pdf", mode: 'copy'
+
+    input:
+        path(markdown_file)
+        path(config)
+        path(plots)
+
+    output:
+    path "protocol-7-instructions.pdf"
+
+    script:
+    """
+    R -e "rmarkdown::render('${markdown_file}', output_file = 'protocol-7-instructions.pdf', params = list(json_path = '${config}', labware_images_dir = '${plots}'))"
+    """
+
+    stub: 
+    """
+        touch protocol-7-instructions.pdf
+    """
+}

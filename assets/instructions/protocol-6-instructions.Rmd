@@ -1,0 +1,116 @@
+---
+title: ""
+output: pdf_document
+params:
+  json_path: NULL
+  labware_images_dir: NULL
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(rjson)
+library(knitr)
+json_data <- fromJSON(file = params$json_path)
+```
+
+# APEX Instructions
+## Protocol 6: SDS PAGE Sample Preparation in OT-2
+
+### Deck Loading
+1. Load pipettes:
+   ```{r pipette-check, results='asis'}
+   if(is.null(json_data$right_pipette_name) || 
+      tolower(json_data$right_pipette_name) == "na" || 
+      json_data$right_pipette_name == "NA") {
+     cat("   - **Right mount**: No pipette loaded\n")
+   } else {
+     cat(paste0("   - **Right mount**: Confirm `", json_data$right_pipette_name, "` is properly installed\n"))
+   }
+   
+   # Left pipette check
+   if(is.null(json_data$left_pipette_name) || 
+      tolower(json_data$left_pipette_name) == "na" || 
+      json_data$left_pipette_name == "NA") {
+     cat("   - **Left mount**: No pipette loaded\n")
+   } else {
+     cat(paste0("   - **Left mount**: Confirm `", json_data$left_pipette_name, "` is properly installed\n"))
+   }
+   ```
+
+2. Load tip racks:
+   ```{r tiprack-check, results='asis'}
+   if(!is.null(json_data$right_pipette_name) && 
+      tolower(json_data$right_pipette_name) != "na" && 
+      json_data$right_pipette_name != "NA") {
+     cat(paste0("   - **Slot `", paste(json_data$right_pipette_tiprack_slot, collapse=", "), "`**: Place `", 
+               json_data$right_pipette_tiprack_name, "` for use with the `", 
+               json_data$right_pipette_name, "` pipette\n"))
+   }
+   if(!is.null(json_data$left_pipette_name) && 
+      tolower(json_data$left_pipette_name) != "na" && 
+      json_data$left_pipette_name != "NA") {
+     cat(paste0("   - **Slot `", paste(json_data$left_pipette_tiprack_slot, collapse=", "), "`**: Place `", 
+               json_data$left_pipette_tiprack_name, "` for use with the `", 
+               json_data$left_pipette_name, "` pipette\n"))
+   }
+   ```
+
+3. Load plates:
+   - **Slot `r json_data$culture_plate_slot`**: Place `r json_data$culture_plate_name` containing bacterial cultures
+   - **Slot `r json_data$lysis_plate_slot`**: Place `r json_data$lysis_plate_name` for cell lysis
+   - **Slot `r json_data$reagent_plate_slot`**: Place `r json_data$reagent_plate_name` containing reagents
+   - **Slot `r json_data$sds_plate_slot`**: Place `r json_data$sds_plate_name` for SDS PAGE sample preparation
+
+### Preparation
+Prepare reagents and labware according to the plate layout shown below. All volumes are in `r "$\\mu$L"`. Include additional volume for accurate pipetting.
+
+```{r source-plate-images, results='asis', echo=FALSE}
+image_files <- list.files(path = params$labware_images_dir, pattern = "\\.png$", full.names = TRUE)
+image_files <- sort(image_files)
+
+if(length(image_files) > 1) {
+  for (i in 1:(length(image_files)-1)) {
+    if (i %% 2 == 1 && i > 1) {
+      cat('\n\n')
+    }
+    
+    cat(sprintf('![](%s){width=49\\%%}', image_files[i]))
+
+    if (i %% 2 != 0 && i < (length(image_files)-1)) {
+      cat(' ')
+    }
+  }
+} else {
+  cat("*No plate layout images available*")
+}
+```
+
+### Protocol Execution
+1. **Culture Aliquoting**: APEX mixes bacterial cultures `r json_data$culture_mix_number` times using a volume of `r json_data$culture_mix_volume` `r "$\\mu$L"` and transfers the aliquots to the lysis plate.
+
+2. **Centrifugation (Manual Step)**: Remove the lysis plate from the deck. Centrifuge according to laboratory protocol. Return the plate to its original position on the deck and resume the protocol.
+
+3. **Supernatant Removal**: APEX discards the supernatant with a bottom clearance of `r json_data$pallet_well_bottom_clearance` mm and an aspiration flow rate of `r json_data$supernatant_flow_rate_aspirate` `r "$\\mu$L"`L/s.
+
+4. **Cell Lysis**: APEX adds lysis buffer to each cell pellet and mixes `r json_data$lysis_mix_number` times and incubates for `r json_data$lysis_incubation_time_min` minutes.
+
+5. **Second Centrifugation (Manual Step)**: Remove the lysis plate from the deck. Centrifuge according to laboratory protocol. Ensure the SDS destination plate is properly loaded in the thermocycler. Return the plate to its original position on the deck and resume the protocol.
+
+6. **SDS Buffer Distribution**: APEX distributes SDS buffer into the destination plate in the thermocycler.
+
+7. **Lysate Transfer**: APEX transfers lysate aliquots to the SDS destination plate and mixes `r json_data$sds_mix_number` times.
+
+8. **Protein Denaturation**: The thermocycler performs protein denaturation with a lid temperature of `r json_data$lid_temp` °C, a denaturation temperature of `r json_data$denaturation_temp` °C, and a denaturation time of `r json_data$denaturation_time_min` minutes.
+
+### Final Plate Layout
+Once the protocol is completed, SDS PAGE sample plate will have the following layout:
+
+```{r destination-plate-image, results='asis', echo=FALSE}
+image_files <- list.files(path = params$labware_images_dir, pattern = "\\.png$", full.names = TRUE)
+image_files <- sort(image_files)
+
+if(length(image_files) > 0) {
+  cat(sprintf('![](%s){width=70\\%%}', image_files[length(image_files)]))
+} else {
+  cat("*No destination plate image available*")
+}
+```

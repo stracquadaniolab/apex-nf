@@ -1,0 +1,135 @@
+---
+title: ""
+output: pdf_document
+params:
+  json_path: NULL
+  labware_images_dir: NULL
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(rjson)
+library(knitr)
+
+json_data <- fromJSON(file = params$json_path)
+```
+
+# APEX Instructions
+## Protocol 5: Colony PCR Sample Prep in OT-2
+
+### Deck Loading
+1. Load pipettes:
+   ```{r pipette-check, results='asis'}
+   if(is.null(json_data$right_pipette_name) || 
+      tolower(json_data$right_pipette_name) == "na" || 
+      json_data$right_pipette_name == "NA") {
+     cat("   - **Right mount**: No pipette loaded\n")
+   } else {
+     cat(paste0("   - **Right mount**: Confirm `", json_data$right_pipette_name, "` is properly installed\n"))
+   }
+   
+   # Left pipette check
+   if(is.null(json_data$left_pipette_name) || 
+      tolower(json_data$left_pipette_name) == "na" || 
+      json_data$left_pipette_name == "NA") {
+     cat("   - **Left mount**: No pipette loaded\n")
+   } else {
+     cat(paste0("   - **Left mount**: Confirm `", json_data$left_pipette_name, "` is properly installed\n"))
+   }
+   ```
+
+2. Load tip racks:
+   - **Slot `r paste(json_data$right_pipette_tiprack_slot, collapse=", ")`**: Place `r json_data$right_pipette_tiprack_name` for use with the `r json_data$right_pipette_name` pipette
+   - **Slot `r paste(json_data$left_pipette_tiprack_slot, collapse=", ")`**: Place `r json_data$left_pipette_tiprack_name` for use with the `r json_data$left_pipette_name` pipette
+
+3. Load plates:
+   - **Thermocycler**: Place `r json_data$pcr_plate_name` in the thermocycler module for PCR reaction setup
+   - **Slot `r json_data$reagent_plate_slot`**: Place `r json_data$reagent_plate_name` containing water and mastermix reagents
+
+### Preparation
+Prepare reagents and labware according to the plate layout shown below. All volumes are in `r "$\\mu$L"`. Include additional volume for accurate pipetting.
+
+```{r source-plate-images, results='asis', echo=FALSE}
+image_files <- list.files(path = params$labware_images_dir, pattern = "\\.png$", full.names = TRUE)
+image_files <- sort(image_files)
+
+if(length(image_files) > 1) {
+  for (i in 1:(length(image_files)-1)) {
+    if (i %% 2 == 1 && i > 1) {
+      cat('\n\n')
+    }
+    
+    cat(sprintf('![](%s){width=49\\%%}', image_files[i]))
+
+    if (i %% 2 != 0 && i < (length(image_files)-1)) {
+      cat(' ')
+    }
+  }
+} else {
+  cat("*No plate layout images available*")
+}
+```
+
+### Protocol Execution
+1. **Water Distribution**: APEX distributes water into designated wells of the PCR plate in the thermocycler.
+
+2. **Colony Picking**: When prompted by the robot, remove the PCR plate from the thermocycler. Using sterile technique, pick individual bacterial colonies and resuspend them in the wells containing water. Return the plate to the thermocycler and resume the protocol.
+
+3. **Mastermix Addition**: APEX transfers mastermix to each well containing colony suspensions. APEX performs `r json_data$mastermix_mix_cycles` mixing cycles.
+
+4. **PCR Amplification**: The thermocycler runs using the following parameters in Table 1.
+
+```{r thermal-cycling-table, echo=FALSE}
+# Create a table for thermal cycling parameters
+thermal_cycling <- data.frame(
+  Step = c("Lid Temperature", 
+           "Initial Denaturation", 
+           "Denaturation", 
+           "Annealing", 
+           "Extension", 
+           "Final Extension", 
+           "Hold"),
+  Temperature = c(paste0(json_data$lid_temp, "°C"),
+                 paste0(json_data$initial_denaturation_temp, "°C"),
+                 paste0(json_data$denaturation_temp, "°C"),
+                 paste0(json_data$annealing_temp, "°C"),
+                 paste0(json_data$extension_temp, "°C"),
+                 paste0(json_data$final_extension_temp, "°C"),
+                 paste0(json_data$hold_temp, "°C")),
+  Duration = c("N/A",
+              paste0(json_data$initial_denaturation_time_min, " min"),
+              paste0(json_data$denaturation_time_sec, " sec"),
+              paste0(json_data$annealing_time_sec, " sec"),
+              paste0(json_data$extension_time_sec, " sec"),
+              paste0(json_data$final_extension_time_min, " min"),
+              "Indefinite"),
+  Cycles = c("N/A",
+            "1",
+            paste0(json_data$amplification_cycles),
+            paste0(json_data$amplification_cycles),
+            paste0(json_data$amplification_cycles),
+            "1",
+            "N/A")
+)
+
+kable(thermal_cycling, caption = "PCR Thermal Cycling Parameters", align = "lccc")
+```
+
+Once the protocol is completed, the PCR plate will have the following layout:
+
+```{r destination-plate-image, results='asis', echo=FALSE}
+# Display only the last image (destination plate)
+tryCatch({
+  image_files <- list.files(path = params$labware_images_dir, pattern = "\\.png$", full.names = TRUE)
+  image_files <- sort(image_files)
+  
+  if(length(image_files) > 0) {
+    # Display the last image (destination plate)
+    cat(sprintf('![](%s){width=70\\%%}', image_files[length(image_files)]))
+  } else {
+    cat("*No destination plate image available*")
+  }
+}, error = function(e) {
+  cat("*Error loading destination plate image. Please check the path.*")
+})
+```

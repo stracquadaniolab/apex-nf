@@ -1,0 +1,102 @@
+---
+title: ""
+output: pdf_document
+params:
+  json_path: NULL
+  labware_images_dir: NULL
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(rjson)
+library(knitr)
+json_data <- fromJSON(file = params$json_path)
+```
+
+# APEX Instructions
+## Protocol 7: OD600 Reading Sample Prep in OT-2
+
+### Deck Loading
+1. Load pipettes:
+   ```{r pipette-check, results='asis'}
+   if(is.null(json_data$right_pipette_name) || 
+      tolower(json_data$right_pipette_name) == "na" || 
+      json_data$right_pipette_name == "NA") {
+     cat("   - **Right mount**: No pipette loaded\n")
+   } else {
+     cat(paste0("   - **Right mount**: Confirm `", json_data$right_pipette_name, "` is properly installed\n"))
+   }
+   
+   # Left pipette check
+   if(is.null(json_data$left_pipette_name) || 
+      tolower(json_data$left_pipette_name) == "na" || 
+      json_data$left_pipette_name == "NA") {
+     cat("   - **Left mount**: No pipette loaded\n")
+   } else {
+     cat(paste0("   - **Left mount**: Confirm `", json_data$left_pipette_name, "` is properly installed\n"))
+   }
+   ```
+
+2. Load tip racks:
+   ```{r tiprack-check, results='asis'}
+   if(!is.null(json_data$right_pipette_name) && 
+      tolower(json_data$right_pipette_name) != "na" && 
+      json_data$right_pipette_name != "NA") {
+     cat(paste0("   - **Slot `", paste(json_data$right_pipette_tiprack_slot, collapse=", "), "`**: Place `", 
+               json_data$right_pipette_tiprack_name, "` for use with the `", 
+               json_data$right_pipette_name, "` pipette\n"))
+   }
+   if(!is.null(json_data$left_pipette_name) && 
+      tolower(json_data$left_pipette_name) != "na" && 
+      json_data$left_pipette_name != "NA") {
+     cat(paste0("   - **Slot `", paste(json_data$left_pipette_tiprack_slot, collapse=", "), "`**: Place `", 
+               json_data$left_pipette_tiprack_name, "` for use with the `", 
+               json_data$left_pipette_name, "` pipette\n"))
+   }
+   ```
+
+3. Load plates:
+   - **Slot `r json_data$diluent_plate_slot`**: Place `r json_data$diluent_plate_name` containing diluent (e.g. water, media)
+   - **Slot `r json_data$culture_plate_slot`**: Place `r json_data$culture_plate_name` containing bacterial cultures
+   - **Slot `r json_data$reading_plate_slot`**: Place `r json_data$reading_plate_name` where OD600 will be measured
+
+### Preparation
+Prepare reagents and labware according to the plate layout shown below. All volumes are in `r "$\\mu$L"`. Include additional volume for accurate pipetting.
+
+```{r source-plate-images, results='asis', echo=FALSE}
+image_files <- list.files(path = params$labware_images_dir, pattern = "\\.png$", full.names = TRUE)
+image_files <- sort(image_files)
+
+if(length(image_files) > 1) {
+  for (i in 1:(length(image_files)-1)) {
+    if (i %% 2 == 1 && i > 1) {
+      cat('\n\n')
+    }
+    cat(sprintf('![](%s){width=49\\%%}', image_files[i]))
+    if (i %% 2 != 0 && i < (length(image_files)-1)) {
+      cat(' ')
+    }
+  }
+} else {
+  cat("*No plate layout images available*")
+}
+```
+
+### Protocol Execution
+1. **Diluent Distribution**: APEX distributes diluent (e.g. water, media) into the reading plate.
+
+2. **Culture Transfer**: APEX mixes the bacterial cultures `r json_data$culture_mix_number` times using a volume of `r json_data$culture_mix_volume` `r "$\\mu$L"` and transfers an aliquote of each culture to the reading plate containing diluent and mixes it once.
+
+### Final Plate Layout
+Once the protocol is completed, the OD600 reading plate will have the following layout:
+
+```{r destination-plate-image, results='asis', echo=FALSE}
+image_files <- list.files(path = params$labware_images_dir, pattern = "\\.png$", full.names = TRUE)
+image_files <- sort(image_files)
+
+if(length(image_files) > 0) {
+  cat(sprintf('![](%s){width=70\\%%}', image_files[length(image_files)]))
+} else {
+  cat("*No destination plate image available*")
+}
+```

@@ -1,0 +1,16 @@
+{
+    "right_pipette_name":"p20_multi_gen2",
+    "right_pipette_tiprack_name":"opentrons_96_tiprack_20ul",
+    "right_pipette_tiprack_slot":[6],
+    "left_pipette_name":"p300_multi_gen2",
+    "left_pipette_tiprack_name":"opentrons_96_tiprack_300ul",
+    "left_pipette_tiprack_slot":[9],
+    "diluent_plate_name": "usascientific_12_reservoir_22ml",
+    "diluent_plate_slot":1,
+    "culture_plate_name":"usascientific_96_wellplate_2.4ml_deep",
+    "culture_plate_slot":3,
+    "reading_plate_name": "corning_96_wellplate_360ul_flat",
+    "reading_plate_slot":2,
+    "culture_mix_number":5,
+    "culture_mix_volume":20
+}
