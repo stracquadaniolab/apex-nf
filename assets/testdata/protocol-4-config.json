@@ -8,11 +8,11 @@
     "culture_plate_name":"usascientific_96_wellplate_2.4ml_deep",
     "culture_plate_slot":1,
     "media_plate_name":"usascientific_12_reservoir_22ml",
-    "media_plate_slot":2,
+    "media_plate_slot":3,
     "inducer_plate_name":"usascientific_12_reservoir_22ml",
-    "inducer_plate_slot":2,
+    "inducer_plate_slot":3,
     "destination_plate_name":"usascientific_96_wellplate_2.4ml_deep",
-    "destination_plate_slot":3,
+    "destination_plate_slot":2,
     "culture_mix_number":5,
     "culture_mix_volume":20
 }

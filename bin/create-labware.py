@@ -146,7 +146,7 @@ def create_csv_protocol_3(data_csv: str, parameters_json: str, output_csv: str) 
             "id": df["colony_id"],
             "well_name": df["colony_source_well"],
             "volume": 0,
-            "location": df["agar_plate_location"]
+            "location": df["agar_plate_slot"]
         })
     
     source_config = {

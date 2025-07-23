@@ -136,10 +136,11 @@ def run(protocol: protocol_api.ProtocolContext):
     dna_plate = load_or_reuse_labware(protocol, {"name": params["dna_plate_name"], "slot": params["dna_plate_slot"]}, loaded_plates)
     media_plate = load_or_reuse_labware(protocol, {"name": params["media_plate_name"], "slot": params["media_plate_slot"]}, loaded_plates)
     
-    thermocycler_mod = protocol.load_module("thermocycler")
+    thermocycler_mod = protocol.load_module(params["thermocycler_model"])
     transformation_plate = thermocycler_mod.load_labware(params["transformation_plate_name"])
     thermocycler_mod.set_block_temperature(temperature=params["pre_shock_incubation_temp"])
     thermocycler_mod.open_lid()
+    protocol.pause("Put the transformation plate into the thermocycler and the plate with cells on the deck. Click resume.")
 
     ########## DISTRIBUTE COMPETENT CELLS ##########
     protocol.comment("Distributing competent cells.")
@@ -175,9 +176,8 @@ def run(protocol: protocol_api.ProtocolContext):
         pipette_dna.dispense(volume=vol_dna, location=transformation_plate.wells_by_name()[dest_well])
         mix_volume = (vol_dna + vol_cells) / 2
         mix_volume = mix_volume if mix_volume <= pipette_dna.max_volume / 2 else pipette_dna.max_volume
-        pipette_dna.mix(repetitions=2, volume=mix_volume, location=transformation_plate.wells_by_name()[dest_well], rate=0.5)
+        pipette_dna.mix(repetitions=1, volume=mix_volume, location=transformation_plate.wells_by_name()[dest_well])
         pipette_dna.blow_out(location=transformation_plate.wells_by_name()[dest_well])
-        pipette_dna.move_to(transformation_plate.wells_by_name()[dest_well].bottom())
         pipette_dna.drop_tip()
 
     ########## HEAT SHOCK TRANSFORMATION ##########

@@ -214,7 +214,7 @@ def run(protocol: protocol_api.ProtocolContext):
             source=culture_plate.wells_by_name()[src],
             dest=reading_plate.wells_by_name()[dest],
             mix_before=(params["culture_mix_number"], params["culture_mix_volume"]),
-            mix_after=(2, mixing_volume),
+            mix_after=(1, mixing_volume),
             blow_out=True,
             blowout_location="destination well",
             new_tip="always",

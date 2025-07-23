@@ -42,28 +42,53 @@ def load_csv_data(csv_content: str):
             data[key].append(float(value) if "volume" in key else value)
     return namedtuple("ProtocolData", data.keys())(*[data[key] for key in data.keys()])
 
-def filter_compatible_data(pipette, sources: List[str], volumes: List[float], destinations: List[str], locations: List[any] = None) -> Tuple[List[str], List[float], List[str], List[float]]:
-    """Filters sources, volumes, and destinations, optionally handling locations."""
-    seen_columns, filtered_sources, filtered_volumes, filtered_destinations, filtered_locations = set(), [], [], [], []
+def filter_compatible_data(
+    pipette,
+    sources: List[str],
+    volumes: List[float],
+    destinations: List[str],
+    locations: List[str],
+    weights: List[str],
+) -> Tuple[List[str], List[float], List[str], List[float], List[float]]:
+    """Filters sources, volumes, and destinations."""
+    seen_columns, filtered = set(), []
     is_multi_channel = "8-Channel" in str(pipette)
 
-    for i, (source, destination) in enumerate(zip(sources, destinations)):
-        formatted_destination = "A" + destination[1:] if is_multi_channel else destination
-        formatted_source = "A" + source[1:] if is_multi_channel else source
+    # Handle empty lists by padding with default values
+    max_len = max(len(sources), len(destinations))
+    if not volumes:
+        volumes = [0.0] * max_len
+    if not locations:
+        locations = ['0'] * max_len
+    if not weights:
+        weights = ['0.0'] * max_len
 
-        if formatted_destination not in seen_columns:
-            seen_columns.add(formatted_destination)
-            filtered_sources.append(formatted_source)
-            filtered_destinations.append(formatted_destination)
-            
-            if volumes:
-                filtered_volumes.append(volumes[i])
-            if locations:
-                filtered_locations.append(int(locations[i]))
-    if locations:
-        return filtered_sources, filtered_destinations, filtered_locations
-    else:
-        return filtered_sources, filtered_volumes, filtered_destinations
+    for source, volume, destination, location, weight in zip(
+        sources, volumes, destinations, locations, weights
+    ):
+        formatted_destination = (
+            "A" + destination[1:] if is_multi_channel else destination
+        )
+        destination_location_key = (formatted_destination, location, weight)
+
+        if destination_location_key not in seen_columns:
+            seen_columns.add(destination_location_key)
+            formatted_source = "A" + source[1:] if is_multi_channel else source
+            filtered.append(
+                (
+                    formatted_source,
+                    volume,
+                    formatted_destination,
+                    int(location),
+                    float(weight),
+                )
+            )
+
+    # Handle case where filtered is empty
+    if not filtered:
+        return [], [], [], [], []
+        
+    return zip(*filtered)
     
 def setup_pipettes(protocol: protocol_api.ProtocolContext, pipette_info: Dict[str, Any]) -> Dict[str, protocol_api.InstrumentContext]:
     """Load specified pipettes into the protocol based on configuration details provided."""
@@ -116,8 +141,8 @@ def select_pipette(
 def agar_height(agar_plate_weight: float, empty_agar_plate_weight: float, agar_plate_area: float, agar_density: float, agar_pierce_depth: float) -> float:
     """Calculate the the agar height based on the base area of the plate, weight of the empty plate, the weight of plate with agar and the agar density."""
     agar_weight = float(agar_plate_weight) - float(empty_agar_plate_weight)
-    agar_height = agar_weight/(agar_plate_area*(agar_density/1000))
-    height = agar_height + agar_pierce_depth
+    agar_height = agar_weight / (agar_plate_area * (agar_density))
+    height = agar_height + agar_pierce_depth    
     return height
 
 def calculate_spiral_coords(max_radius: float, num_points: int = 25, total_rotations: float = 3) -> tuple:  
@@ -161,20 +186,55 @@ def run(protocol: protocol_api.ProtocolContext):
     media_plate = protocol.load_labware(load_name = json_params["media_plate_name"], location = json_params["media_plate_slot"])
     destination_plate = protocol.load_labware(load_name = json_params["destination_plate_name"], location = json_params["destination_plate_slot"])
     
-    colony_wells, sampling_destination_wells, locations = filter_compatible_data(pipette_sampling, data.colony_source_well, [], data.destination_well, data.agar_plate_location)
-    
-    agar_labware = {int(slot): protocol.load_labware(load_name=json_params["agar_plate_name"], location=slot, label=f"Agar Plate {i+1}")
-                    for i, slot in enumerate(json_params["agar_plate_slot"])}
-    agar_info = {slot: {"empty_plate_weight": weight, "agar_plate_weight": agar_weight}
-                 for slot, weight, agar_weight in zip(json_params["agar_plate_slot"], json_params["empty_agar_plate_weight"], json_params["agar_plate_weight"])}
+    # colony_wells, sampling_destination_wells, locations, weights = filter_compatible_data(pipette_sampling, data.colony_source_well, [], data.destination_well, data.agar_plate_slot, data.agar_plate_weight)
+
+    colony_wells, _, sampling_destination_wells, locations, weights = filter_compatible_data(
+        pipette_sampling,
+        data.colony_source_well,
+        [],
+        data.destination_well,
+        data.agar_plate_slot,
+        data.agar_plate_weight,
+    )
+
+    agar_plate_slots = set(locations)
+
+    agar_labware = {
+        int(slot): protocol.load_labware(
+            load_name=json_params["agar_plate_name"],
+            location=slot,
+            label=f"Agar Plate {i+1}",
+        )
+        for i, slot in enumerate(agar_plate_slots)
+    }
+
+    agar_info = {}
+    for slot, agar_weight in zip(locations, weights):
+            if slot not in agar_info:
+                agar_info[slot] = {
+                    "empty_plate_weight": json_params["empty_agar_plate_weight"],
+                    "agar_plate_weight": agar_weight,
+                }
+
     agar_plates = [agar_labware[loc] for loc in locations]
-    empty_plate_weight = [agar_info[loc]["empty_plate_weight"] for loc in locations if loc in agar_info]
-    agar_plate_weight = [agar_info[loc]["agar_plate_weight"] for loc in locations if loc in agar_info]
-    
+
+
+    empty_plate_weight = [
+        agar_info[loc]["empty_plate_weight"] for loc in locations if loc in agar_info
+    ]
+    agar_plate_weight = [
+        agar_info[loc]["agar_plate_weight"] for loc in locations if loc in agar_info
+    ]
+
     ########## DISTRIBUTE MEDIA ##########
     protocol.comment("Distribute media.")
-    media_source, media_volume, media_destination = filter_compatible_data(
-        pipette_media, data.media_source_well, data.media_volume, data.destination_well
+    media_source, media_volume, media_destination, _, _ = filter_compatible_data(
+        pipette_media,
+        data.media_source_well,
+        data.media_volume,
+        data.destination_well,
+        [],
+        []
     )
     for src, vol, dest in zip(media_source, media_volume, media_destination):
         media_distribution_map[src].append((vol, dest))
@@ -195,6 +255,9 @@ def run(protocol: protocol_api.ProtocolContext):
     pipette_media.drop_tip()
 
     ########## SAMPLING ##########
+    pipette_sampling.flow_rate.aspirate = 22.6
+    pipette_sampling.flow_rate.dispense = 22.6
+    pipette_sampling.flow_rate.blow_out = 22.6
     protocol.comment("Start sampling cells.")
     for plate, source, destination, empty_weight, agar_weight in zip(agar_plates, colony_wells, sampling_destination_wells, empty_plate_weight, agar_plate_weight):
         pipette_sampling.pick_up_tip()

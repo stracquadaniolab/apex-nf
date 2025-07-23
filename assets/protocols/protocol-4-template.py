@@ -7,7 +7,7 @@ from typing import Tuple, List, Dict, NamedTuple, Any, Optional
 metadata = {
     "apiLevel": "2.16",
     "protocolName": "Protocol 4: Protein Expression Induction",
-    "description": "OT-2 protocol for protein expression indcution.",
+    "description": "OT-2 protocol for protein expression induction.",
     "author": "Stracquadanio Lab",
 }
 
@@ -207,6 +207,9 @@ def run(protocol: protocol_api.ProtocolContext):
     )
 
     ########## DISTRIBUTE MEDIA ##########
+    pipette_media.flow_rate.aspirate = 277.4
+    pipette_media.flow_rate.dispense = 277.4
+    pipette_media.flow_rate.blow_out = 277.4
     media_source, media_volume, media_destination = filter_compatible_data(
         pipette_media, data.media_source_well, data.media_volume, data.destination_well
     )
@@ -248,6 +251,9 @@ def run(protocol: protocol_api.ProtocolContext):
     )
 
     ########## INDUCER TRANSFER ##########
+    pipette_inducer.flow_rate.aspirate = 22.6
+    pipette_inducer.flow_rate.dispense = 22.6
+    pipette_inducer.flow_rate.blow_out = 22.6
     inducer_well, inducer_volume, inducer_destination = filter_compatible_data(
         pipette_inducer, data.inducer_source_well, data.inducer_volume, data.destination_well
     )

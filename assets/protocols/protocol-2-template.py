@@ -146,6 +146,9 @@ def run(protocol: protocol_api.ProtocolContext):
     ]
 
     ######## SPOTTING ##########
+    pipette.flow_rate.aspirate = 22.6
+    pipette.flow_rate.dispense = 22.6
+    pipette.flow_rate.blow_out = 22.6
     protocol.comment("Start spotting transformed cells onto the plate(s).")
     for plate, source, volume, destination, empty_weight, agar_weight in zip(
         agar_plates,
@@ -162,14 +165,12 @@ def run(protocol: protocol_api.ProtocolContext):
             pipette.mix(
                 repetitions=3,
                 volume=params["mixing_volume"],
-                location=transformation_plate[source],
-                rate=2,
+                location=transformation_plate[source]
             )
             for dest in destinations:
                 pipette.aspirate(
                     volume=volume + params["additional_volume"],
-                    location=transformation_plate[source],
-                    rate=2,
+                    location=transformation_plate[source]
                 )
                 pipette.well_bottom_clearance.dispense = agar_height(
                     agar_weight,
@@ -178,20 +179,18 @@ def run(protocol: protocol_api.ProtocolContext):
                     params["agar_density"],
                     params["spotting_height"],
                 )
-                pipette.dispense(volume=volume, location=plate[dest], rate=4)
+                pipette.dispense(volume=volume, location=plate[dest])
                 protocol.delay(seconds=5)
             pipette.drop_tip()
         else:
             pipette.mix(
                 repetitions=3,
                 volume=params["mixing_volume"],
-                location=transformation_plate[source],
-                rate=2,
+                location=transformation_plate[source]
             )
             pipette.aspirate(
                 volume=volume + params["additional_volume"],
-                location=transformation_plate[source],
-                rate=2,
+                location=transformation_plate[source]
             )
             pipette.well_bottom_clearance.dispense = agar_height(
                 agar_weight,
@@ -200,7 +199,7 @@ def run(protocol: protocol_api.ProtocolContext):
                 params["agar_density"],
                 params["spotting_height"],
             )
-            pipette.dispense(volume=volume, location=plate[destination], rate=4)
+            pipette.dispense(volume=volume, location=plate[destination])
             protocol.delay(seconds=5)
             pipette.drop_tip()
 

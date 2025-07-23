@@ -179,6 +179,7 @@ def run(protocol: protocol_api.ProtocolContext):
     mastermix_pipette = select_pipette(data.mastermix_volume, available_pipettes)
 
     ########## DSITRIBUTE WATER ##########
+
     water_source, water_volume, water_destination = filter_compatible_data(
         water_pipette, data.water_source_well, data.water_volume, data.destination_well
     )
@@ -206,6 +207,7 @@ def run(protocol: protocol_api.ProtocolContext):
     )
 
     ########## TRANSFER MASTERMIX ##########
+
     mastermix_source, mastermix_volume, mastermix_destination = filter_compatible_data(
         mastermix_pipette,
         data.mastermix_source_well,
@@ -275,5 +277,3 @@ def run(protocol: protocol_api.ProtocolContext):
         hold_time_minutes=json_params["final_extension_time_min"],
     )  # Final extension
     thermocycler_mod.set_block_temperature(temperature=json_params["hold_temp"])  # Hold
-
-    protocol.comment("Protocol completed successfully.")
